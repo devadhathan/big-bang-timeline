@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cosmos · Big Bang Timeline</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5.2.5/index.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5.2.5/index.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --muted: #888;
+    --dim: #555;
+    --faint: #222;
+    --line: #1a1a1a;
+    --panel: #0a0a0a;
+    --safe: env(safe-area-inset-bottom, 0px);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 8px;
+    --font-sans: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: var(--bg); color: var(--fg);
+    font-family: var(--font-sans); -webkit-font-smoothing: antialiased;
+    overflow: hidden; user-select: none;
+  }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; cursor: grab; }
+  #stage.is-orbiting { cursor: grabbing; }
+  .chrome {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+  .chrome > * { pointer-events: auto; }
+  .mid { pointer-events: none; }
+  header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center; gap: 16px;
+    margin: 14px 16px 0;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(10,10,10,0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-mark { width: 16px; height: 16px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+  .brand h1 { font-size: 13px; font-weight: 560; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand span { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .views {
+    display: flex; gap: 4px; padding: 4px; border: 1px solid var(--faint);
+    border-radius: 999px; background: #050505; justify-self: center;
+  }
+  .views button {
+    appearance: none; border: 0; background: transparent; color: var(--dim);
+    font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+    padding: 7px 12px; border-radius: 999px; cursor: pointer; letter-spacing: -0.01em;
+  }
+  .views button.active { background: #fff; color: #000; }
+  .clock {
+    font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 8px;
+    white-space: nowrap; justify-self: end;
+    width: 22ch; max-width: 100%;
+  }
+  .clock .label {
+    font-family: var(--font-sans); font-size: 10px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0;
+  }
+  #time-readout {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    width: 16ch;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .mid {
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start;
+    padding: 0 24px 20px; position: relative; width: 100%; max-width: none;
+  }
+  .epoch-kicker {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .epoch-title {
+    font-size: clamp(26px, 4.5vw, 44px); font-weight: 600;
+    letter-spacing: -0.045em; line-height: 1.05; margin-bottom: 10px;
+  }
+  .epoch-copy { font-size: 14px; line-height: 1.55; color: var(--muted); max-width: 44ch; }
+  .meta {
+    margin-top: 14px; display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--dim);
+    padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px;
+    background: rgba(0,0,0,0.55);
+  }
+  .meta .dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+  .stages {
+    display: none;
+    margin-top: 14px;
+    gap: 6px;
+    flex-wrap: wrap;
+    pointer-events: auto;
+  }
+  .stages.visible { display: flex; }
+  .stages button {
+    appearance: none;
+    border: 1px solid var(--faint);
+    background: transparent;
+    color: var(--dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  .stages button.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+  .stages button:hover { border-color: #555; color: #ccc; }
+  .hint-orbit {
+    position: absolute; right: 24px; bottom: 28px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--dim);
+    letter-spacing: 0.04em; text-transform: uppercase; pointer-events: none;
+  }
+  footer {
+    margin: 0 16px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(10,10,10,0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 14px 18px calc(14px + var(--safe));
+  }
+  .transport { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .btn {
+    appearance: none; border: 1px solid var(--faint); background: var(--panel);
+    color: var(--fg); width: 36px; height: 36px; border-radius: 999px;
+    cursor: pointer; display: grid; place-items: center;
+  }
+  .btn:hover { background: #111; border-color: #444; }
+  .btn svg { width: 13px; height: 13px; fill: currentColor; }
+  .btn.primary {
+    background: #fff; color: #000; border-color: #fff; width: auto; padding: 0 14px;
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500;
+    border-radius: 999px; height: 36px;
+  }
+  .btn.primary:hover { background: #e8e8e8; }
+  .speed {
+    margin-left: auto; display: flex; gap: 2px;
+    padding: 3px; border: 1px solid var(--faint); border-radius: 999px; background: #050505;
+  }
+  .speed button {
+    appearance: none; border: 1px solid transparent; background: transparent; color: var(--dim);
+    font-family: var(--font-mono); font-size: 11px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .speed button.active { color: #000; background: #fff; border-color: #fff; }
+  .scrub-wrap { position: relative; }
+  .scrub-zoom {
+    position: absolute; right: 0; top: -18px;
+    font-family: var(--font-mono); font-size: 9px; color: var(--dim);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .scrub { position: relative; height: 44px; touch-action: none; border-radius: var(--radius-sm); overflow: hidden; }
+  .track {
+    position: absolute; left: 0; right: 0; top: 18px; height: 4px;
+    background: var(--faint); border-radius: 999px; overflow: hidden;
+  }
+  .track-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: #fff; border-radius: 999px; }
+  .markers { position: absolute; inset: 0; pointer-events: none; }
+  .marker {
+    position: absolute; top: 14px; width: 2px; height: 10px; background: #333;
+    transform: translateX(-50%); border-radius: 999px;
+  }
+  .marker.major { height: 14px; top: 12px; background: #555; }
+  .marker.earth { background: #fff; height: 16px; top: 11px; }
+  .marker-label {
+    position: absolute; top: 30px; font-size: 9px; color: var(--dim);
+    font-family: var(--font-mono); white-space: nowrap; transform: translateX(-50%);
+  }
+  .thumb {
+    position: absolute; top: 11px; left: 0%; width: 16px; height: 16px; margin-left: -8px;
+    border-radius: 50%; background: #fff; border: 2px solid #000;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25); z-index: 3; pointer-events: none;
+  }
+  .scrub.is-dragging { cursor: grabbing; }
+  .ends {
+    margin-top: 8px; font-size: 10px; color: var(--dim);
+    display: flex; justify-content: space-between; font-family: var(--font-mono); gap: 12px;
+    min-height: 14px;
+  }
+  .ends span {
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    max-width: 48%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media (max-width: 720px) {
+    header { flex-wrap: wrap; margin: 10px 10px 0; padding: 10px 12px; }
+    .clock { flex: 1 1 100%; justify-content: flex-start; }
+    #time-readout { text-align: left; width: 100%; }
+    .clock { width: 100%; justify-self: stretch; }
+    footer { margin: 0 10px 10px; padding: 12px 14px calc(12px + var(--safe)); }
+    footer, .mid { padding-left: 14px; padding-right: 14px; }
+    .marker-label, .hint-orbit, .scrub-zoom { display: none; }
+    .views button { padding: 6px 10px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div class="chrome">
+  <header>
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <h1>Cosmos <span>/ big bang expansion</span></h1>
+    </div>
+    <div class="views" role="group" aria-label="Camera view">
+      <button type="button" data-view="diagram" class="active">Diagram</button>
+      <button type="button" data-view="orbit">Orbit</button>
+      <button type="button" data-view="present">Present</button>
+    </div>
+    <div class="clock" aria-live="polite">
+      <span class="label">t =</span>
+      <span id="time-readout">1.00 × 10⁻⁴³ s</span>
+    </div>
+  </header>
+
+  <div class="mid">
+    <div style="max-width:540px">
+      <div class="epoch-kicker" id="epoch-kicker">Chapter 01</div>
+      <h2 class="epoch-title" id="epoch-title">Planck epoch</h2>
+      <p class="epoch-copy" id="epoch-copy">All four forces unified. Spacetime itself is quantized.</p>
+      <div class="meta"><span class="dot"></span><span id="temp-readout">T ≈ 10³² K</span></div>
+      <div class="stages" id="earth-stages" aria-label="Earth eons">
+        <button type="button" data-stage="0">Hadean</button>
+        <button type="button" data-stage="1">Archean</button>
+        <button type="button" data-stage="2">Proterozoic</button>
+        <button type="button" data-stage="3">Phanerozoic</button>
+        <button type="button" data-stage="4">Now</button>
+      </div>
+    </div>
+    <div class="hint-orbit" id="hint-orbit">Drag canvas to orbit · Side reveals model</div>
+  </div>
+
+  <footer>
+    <div class="transport">
+      <button class="btn" id="btn-restart" title="Restart" aria-label="Restart">
+        <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+      </button>
+      <button class="btn primary" id="btn-play" aria-label="Play">
+        <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="play-label">Play</span>
+      </button>
+      <div class="speed" role="group" aria-label="Playback speed">
+        <button data-speed="0.5">0.5×</button>
+        <button data-speed="1" class="active">1×</button>
+        <button data-speed="2">2×</button>
+        <button data-speed="4">4×</button>
+      </div>
+    </div>
+    <div class="scrub-wrap">
+      <div class="scrub-zoom" id="scrub-zoom">Scroll on scrubber to zoom · 1×</div>
+      <div class="scrub" id="scrub">
+        <div class="track"><div class="track-fill" id="track-fill"></div></div>
+        <div class="markers" id="markers"></div>
+        <div class="thumb" id="thumb" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Timeline scrubber"></div>
+      </div>
+    </div>
+    <div class="ends">
+      <span id="scrub-end-left">10⁻⁴³ s · Planck</span>
+      <span id="scrub-end-right">13.8 Gyr · you are here</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const LOG_MIN = -43;
+  const LOG_MAX = 17.64;
+  const LOG_SPAN = LOG_MAX - LOG_MIN;
+  const SEC_PER_YR = 365.25 * 24 * 3600;
+  const PLANCK_TIME = 1e-43;
+  const YR = (n) => n * SEC_PER_YR;
+
+  function tToProgress(seconds) {
+    return (Math.log10(Math.max(seconds, PLANCK_TIME)) - LOG_MIN) / LOG_SPAN;
+  }
+  function progressToT(p) {
+    return Math.pow(10, LOG_MIN + Math.min(1, Math.max(0, p)) * LOG_SPAN);
+  }
+
+  /*
+   * NASA trumpet layout (compact early chapters — don't stretch afterglow).
+   * Tip: quantum fluctuations → inflation → CMB, then a long empty Dark Ages.
+   */
+  const DIAGRAM_MARKERS = [
+    { t: PLANCK_TIME, u: 0.012 },
+    { t: 1e-35, u: 0.048 },           // inflation — bright, right after tip
+    { t: YR(380000), u: 0.095 },      // afterglow — tight, not stretched
+    { t: YR(1e6), u: 0.115 },         // dark ages begin
+    { t: YR(4e8), u: 0.22 },          // first stars (short empty void)
+    { t: YR(1e9), u: 0.42 },          // galaxies
+    { t: YR(9.2e9), u: 0.74 },        // Sun / dark energy
+    { t: YR(13.8e9), u: 1 },          // present
+  ];
+
+  function tToDiagramU(seconds) {
+    const logt = Math.log10(Math.max(seconds, PLANCK_TIME));
+    const marks = DIAGRAM_MARKERS;
+    if (logt <= Math.log10(marks[0].t)) return marks[0].u;
+    if (logt >= Math.log10(marks[marks.length - 1].t)) return 1;
+    for (let i = 0; i < marks.length - 1; i++) {
+      const a = Math.log10(marks[i].t);
+      const b = Math.log10(marks[i + 1].t);
+      if (logt >= a && logt <= b) {
+        const f = (logt - a) / (b - a);
+        return marks[i].u + (marks[i + 1].u - marks[i].u) * f;
+      }
+    }
+    return tToProgress(seconds);
+  }
+
+  const INF_DIAGRAM_U = tToDiagramU(1e-35);
+  const CMB_DIAGRAM_U = tToDiagramU(YR(380000));
+  const STARS_DIAGRAM_U = tToDiagramU(YR(4e8));
+  // Empty void after afterglow until first stars
+  const DARK_AGES_U0 = CMB_DIAGRAM_U + 0.018;
+  const DARK_AGES_U1 = STARS_DIAGRAM_U - 0.02;
+
+  function inDarkAges(u) {
+    return u > DARK_AGES_U0 && u < DARK_AGES_U1;
+  }
+
+  function formatTime(seconds) {
+    const t = Math.max(seconds, PLANCK_TIME);
+    const sig = (n) => {
+      if (!isFinite(n) || n === 0) return "0";
+      const exp = Math.floor(Math.log10(Math.abs(n)));
+      const m = n / Math.pow(10, exp);
+      if (exp === 0) return Number(n.toPrecision(3)).toString();
+      const expStr = String(exp).replace(/-/g, "⁻").replace(/\d/g, (d) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[+d]);
+      return `${Number(m.toPrecision(3))} × 10${expStr}`;
+    };
+    if (t < 1e-40) {
+      const n = t / PLANCK_TIME;
+      return n < 10 ? `${sig(n)} tₚ` : `${sig(n)} Planck times`;
+    }
+    if (t < SEC_PER_YR) {
+      if (t < 1e-3) return `${sig(t)} s`;
+      if (t < 60) return `${Number(t.toPrecision(3))} s`;
+      if (t < 3600) return `${Number((t / 60).toPrecision(3))} min`;
+      if (t < 86400) return `${Number((t / 3600).toPrecision(3))} h`;
+      return `${Number((t / 86400).toPrecision(3))} d`;
+    }
+    const years = t / SEC_PER_YR;
+    if (years < 1e3) return `${Number(years.toPrecision(3))} yr`;
+    if (years < 1e6) return `${Number((years / 1e3).toPrecision(3))} kyr`;
+    if (years < 1e9) return `${Number((years / 1e6).toPrecision(3))} Myr`;
+    return `${Number((years / 1e9).toPrecision(3))} Gyr`;
+  }
+
+  function formatTemp(kelvin) {
+    if (kelvin >= 1e4) {
+      const exp = Math.floor(Math.log10(kelvin));
+      const m = kelvin / Math.pow(10, exp);
+      const expStr = String(exp).replace(/\d/g, (d) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[+d]);
+      return `T ≈ ${Number(m.toPrecision(2))} × 10${expStr} K`;
+    }
+    return `T ≈ ${Number(kelvin.toPrecision(3))} K`;
+  }
+
+  /* ═══════════════════════════════════════════
+     FULL ORIGIN STORY
+     particles → atoms → molecules → stars →
+     Milky Way → Sun → planetesimals → Earth ages → now
+     ═══════════════════════════════════════════ */
+  const EPOCHS = [
+    {
+      id: "planck", label: "Planck", major: true,
+      t: 1e-43, tEnd: 1e-36,
+      title: "Planck epoch", kicker: "Chapter 01 · Beginning",
+      copy: "All four forces unified. Spacetime itself is quantized. Physics as we know it begins.",
+      temp: 1e32, radius: 0.04, spread: 0.1, energy: 1,
+    },
+    {
+      id: "inflation", label: "Inflation", major: true,
+      t: 1e-35, tEnd: 1e-32,
+      title: "Cosmic inflation", kicker: "Chapter 02 · Expansion",
+      copy: "Space expands by ≥10²⁶. Quantum fluctuations stretch into the seeds of every galaxy.",
+      temp: 1e28, radius: 0.28, spread: 0.95, energy: 1, inflate: true,
+    },
+    {
+      id: "particles", label: "Particles", major: true,
+      t: 1e-12, tEnd: 1e-6,
+      title: "Quantum particles form", kicker: "Chapter 03 · Quarks & leptons",
+      copy: "The Higgs settles. Quarks, electrons, neutrinos — the Standard Model zoo — freeze out of the fireball.",
+      temp: 1e15, radius: 0.34, spread: 0.42, energy: 0.85, particles: true,
+    },
+    {
+      id: "hadrons", label: "Hadrons", major: false,
+      t: 1, tEnd: 10,
+      title: "Protons & neutrons", kicker: "Chapter 04 · Hadron epoch",
+      copy: "Quarks bind into protons and neutrons. Antimatter annihilates. A slight matter excess remains.",
+      temp: 1e10, radius: 0.38, spread: 0.4, energy: 0.7, particles: true,
+    },
+    {
+      id: "nuclei", label: "Nuclei", major: true,
+      t: 180, tEnd: 1200,
+      title: "First atomic nuclei", kicker: "Chapter 05 · Nucleosynthesis",
+      copy: "In about twenty minutes: hydrogen, helium, and a trace of lithium — the first nuclei.",
+      temp: 1e9, radius: 0.42, spread: 0.36, energy: 0.6, particles: true,
+    },
+    {
+      id: "atoms", label: "Atoms", major: true,
+      t: YR(380000), tEnd: YR(1e6),
+      title: "Atoms form", kicker: "Chapter 06 · Recombination",
+      copy: "Electrons bind to nuclei. Neutral hydrogen and helium atoms appear. The universe turns transparent — the CMB is born.",
+      temp: 3000, radius: 0.5, spread: 0.48, energy: 0.45, atoms: true, shell: true,
+    },
+    {
+      id: "molecules", label: "Molecules", major: true,
+      t: YR(5e5), tEnd: YR(5e7),
+      title: "Molecules assemble", kicker: "Chapter 07 · Chemistry begins",
+      copy: "In the dark, hydrogen molecules (H₂) and helium hydride form. The first chemistry — long before stars.",
+      temp: 100, radius: 0.58, spread: 0.32, energy: 0.25, atoms: true, molecules: true,
+    },
+    {
+      id: "stars", label: "Stars", major: true,
+      t: YR(1e8), tEnd: YR(4e8),
+      title: "First stars ignite", kicker: "Chapter 08 · Cosmic dawn",
+      copy: "Gravity collapses molecular clouds. Population III stars blaze, forge heavier elements, and explode as supernovae.",
+      temp: 20, radius: 0.66, spread: 0.55, energy: 0.55, stars: true, molecules: true,
+    },
+    {
+      id: "milkyway", label: "Milky Way", major: true,
+      t: YR(1e9), tEnd: YR(8e9),
+      title: "Milky Way forms", kicker: "Chapter 09 · Our galaxy",
+      copy: "Gas and dark matter assemble into a spiral galaxy. Generations of stars enrich the disk with carbon, oxygen, iron.",
+      temp: 10, radius: 0.72, spread: 0.55, energy: 0.48, stars: 0.7, galaxy: 1, solar: 0,
+    },
+    {
+      id: "sun", label: "Sun", major: true,
+      t: YR(9.2e9), tEnd: YR(9.22e9),
+      title: "The Sun is born", kicker: "Chapter 10 · 4.6 Gyr ago",
+      copy: "A molecular cloud collapses in the Orion Arm. Our star ignites — a G-type main-sequence furnace.",
+      temp: 5800, radius: 0.78, spread: 0.2, energy: 0.65, stars: 0.15, galaxy: 0.15, sun: 1, solar: 0.55,
+    },
+    {
+      id: "planetesimals", label: "Disk", major: true,
+      t: YR(9.23e9), tEnd: YR(9.28e9),
+      title: "Planetesimals", kicker: "Chapter 11 · Protoplanetary disk",
+      copy: "Dust coagulates into pebbles, then planetesimals. Collisions build embryos in a swirling disk around the young Sun.",
+      temp: 300, radius: 0.82, spread: 0.15, energy: 0.5, sun: 1, planetesimals: 1, solar: 0.75,
+      stars: 0.4, galaxy: 0.3,
+    },
+    {
+      id: "solarsystem", label: "Planets", major: true,
+      t: YR(9.3e9), tEnd: YR(9.4e9),
+      title: "Solar System forms", kicker: "Chapter 12 · Eight worlds",
+      copy: "Planets clear their orbits. Mercury to Neptune settle. A rocky third world — Earth — takes shape with a new Moon.",
+      temp: 250, radius: 0.86, spread: 0.08, energy: 0.45, sun: 1, solar: 1, planets: 1, earth: 0.35, planetesimals: 0.15,
+      stars: 0.4, galaxy: 0.3,
+    },
+    {
+      id: "hadean", label: "Hadean", major: true,
+      t: YR(9.4e9), tEnd: YR(9.8e9),
+      title: "Hadean Earth", kicker: "Chapter 13 · Age of Hell · 4.5–4.0 Ga",
+      copy: "Magma ocean, constant impacts, steam sky. No continents yet — a hellish newborn world.",
+      temp: 500, radius: 0.9, spread: 0.1, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 0, stars: 0.25, galaxy: 0.2,
+    },
+    {
+      id: "archean", label: "Archean", major: true,
+      t: YR(9.8e9), tEnd: YR(11.3e9),
+      title: "Archean Earth", kicker: "Chapter 14 · First life · 4.0–2.5 Ga",
+      copy: "Crust cools. Oceans dominate. Tiny landmasses rise. Microbial life begins; oxygen slowly appears.",
+      temp: 340, radius: 0.93, spread: 0.1, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 1, life: 0.35, stars: 0.28, galaxy: 0.22,
+    },
+    {
+      id: "proterozoic", label: "Proterozoic", major: true,
+      t: YR(11.3e9), tEnd: YR(13.26e9),
+      title: "Proterozoic Earth", kicker: "Chapter 15 · Oxygen · 2.5–0.54 Ga",
+      copy: "Great Oxidation. Continents grow. Snowball Earth freezes. Complex cells — and soft animals — arrive late.",
+      temp: 290, radius: 0.96, spread: 0.1, energy: 0.44, sun: 1, solar: 1, planets: 1, earth: 1, stage: 2, life: 0.6, stars: 0.3, galaxy: 0.22,
+    },
+    {
+      id: "phanerozoic", label: "Phanerozoic", major: true,
+      t: YR(13.26e9), tEnd: YR(13.75e9),
+      title: "Phanerozoic Earth", kicker: "Chapter 16 · Visible life · 541 Ma–now",
+      copy: "Cambrian explosion, forests, dinosaurs, mammals. Continents drift into familiar shapes.",
+      temp: 288, radius: 0.98, spread: 0.1, energy: 0.45, sun: 1, solar: 1, planets: 1, earth: 1, stage: 3, life: 1, stars: 0.32, galaxy: 0.24,
+    },
+    {
+      id: "now", label: "Now", major: true,
+      t: YR(13.8e9), tEnd: YR(13.8e9),
+      title: "You are here", kicker: "Chapter 17 · Present day",
+      copy: "13.8 billion years later: a yellow star, eight planets, and a living blue Earth. This is home.",
+      temp: 2.725, radius: 1, spread: 0.12, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 4, life: 1, stars: 0.35, galaxy: 0.25,
+    },
+  ];
+
+  const EARTH_STAGES = [
+    { id: "hadean", name: "Hadean", range: "4.5–4.0 Ga", epochId: "hadean" },
+    { id: "archean", name: "Archean", range: "4.0–2.5 Ga", epochId: "archean" },
+    { id: "proterozoic", name: "Proterozoic", range: "2.5–0.54 Ga", epochId: "proterozoic" },
+    { id: "phanerozoic", name: "Phanerozoic", range: "541 Ma–", epochId: "phanerozoic" },
+    { id: "now", name: "Now", range: "Today", epochId: "now" },
+  ];
+
+  const PLANETS = [
+    { name: "Mercury", orbit: 42,  r: 5.2, speed: 4.1, color: [180, 170, 160], tex: "mercury" },
+    { name: "Venus",   orbit: 64,  r: 7.8, speed: 1.6, color: [230, 190, 120], tex: "venus" },
+    { name: "Earth",   orbit: 92,  r: 8.4, speed: 1.0, color: [70, 140, 220], earth: true, tex: "earth" },
+    { name: "Mars",    orbit: 118, r: 6.2, speed: 0.53, color: [210, 100, 70], tex: "mars" },
+    { name: "Jupiter", orbit: 165, r: 16,  speed: 0.18, color: [220, 180, 140], tex: "jupiter" },
+    { name: "Saturn",  orbit: 210, r: 14,  speed: 0.12, color: [230, 210, 160], rings: true, tex: "saturn" },
+    { name: "Uranus",  orbit: 248, r: 9.5, speed: 0.08, color: [140, 210, 220], tex: "uranus" },
+    { name: "Neptune", orbit: 285, r: 9.2, speed: 0.06, color: [70, 110, 230], tex: "neptune" },
+  ];
+
+  function rgba(c, a) {
+    return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  }
+
+  /* Local NASA/Solar System Scope maps (in ./cosmos/) */
+  const TEX = {
+    sun: null, earth: null, moon: null,
+    mercury: null, venus: null, mars: null,
+    jupiter: null, saturn: null, uranus: null, neptune: null,
+    cmb: null,
+  };
+  const TEX_SRC = {
+    sun: "cosmos/2k_sun.jpg",
+    earth: "cosmos/2k_earth_daymap.jpg",
+    moon: "cosmos/2k_moon.jpg",
+    mercury: "cosmos/2k_mercury.jpg",
+    venus: "cosmos/2k_venus.jpg",
+    mars: "cosmos/2k_mars.jpg",
+    jupiter: "cosmos/2k_jupiter.jpg",
+    saturn: "cosmos/2k_saturn.jpg",
+    uranus: "cosmos/2k_uranus.jpg",
+    neptune: "cosmos/2k_neptune.jpg",
+    cmb: "cosmos/cmb-wmap.png",
+  };
+  Object.keys(TEX_SRC).forEach((key) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => { TEX[key] = img; };
+    img.src = TEX_SRC[key];
+  });
+
+  let userSpeed = 1;
+  const SUN_PROGRESS = () => tToProgress(YR(9.2e9));
+
+  /** Soft circular star — cheap path for small dots (avoids per-star gradients) */
+  function drawStarDot(x, y, r, alpha, warm) {
+    if (alpha < 0.02 || r < 0.3) return;
+    if (r < 1.8) {
+      ctx.fillStyle = warm
+        ? `rgba(255,230,180,${alpha})`
+        : `rgba(230,240,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(0.5, r * 0.9), 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.6);
+    if (warm) {
+      g.addColorStop(0, `rgba(255,245,220,${alpha})`);
+      g.addColorStop(0.4, `rgba(255,210,140,${alpha * 0.4})`);
+      g.addColorStop(1, "rgba(255,180,80,0)");
+    } else {
+      g.addColorStop(0, `rgba(255,255,255,${alpha})`);
+      g.addColorStop(0.4, `rgba(200,220,255,${alpha * 0.35})`);
+      g.addColorStop(1, "rgba(140,180,255,0)");
+    }
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(1, alpha)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.45, r * 0.4), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /** Equirectangular map → shaded sphere billboard */
+  function drawTexturedSphere(cx, cy, R, img, spin, alpha, emissive) {
+    if (alpha < 0.02 || R < 2) return false;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.clip();
+
+    if (img && img.complete && img.naturalWidth) {
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
+      // Full 360° map wrapped; show facing hemisphere via clip
+      const phase = ((spin % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2);
+      const destW = R * 4;
+      const destH = R * 2;
+      const x0 = cx - R - phase * destW;
+      ctx.drawImage(img, 0, 0, iw, ih, x0, cy - R, destW, destH);
+      ctx.drawImage(img, 0, 0, iw, ih, x0 + destW, cy - R, destW, destH);
+    } else if (emissive) {
+      const warm = ctx.createRadialGradient(cx - R * 0.2, cy - R * 0.2, 0, cx, cy, R);
+      warm.addColorStop(0, "#fff6c8");
+      warm.addColorStop(0.45, "#ffb020");
+      warm.addColorStop(1, "#ff6a00");
+      ctx.fillStyle = warm;
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    } else {
+      ctx.fillStyle = "#777";
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    }
+
+    if (!emissive) {
+      const shade = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+      shade.addColorStop(0, "rgba(255,255,255,0.18)");
+      shade.addColorStop(0.45, "rgba(0,0,0,0)");
+      shade.addColorStop(0.85, "rgba(0,0,0,0.45)");
+      shade.addColorStop(1, "rgba(0,0,0,0.7)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    } else {
+      // Keep sun warm — never cool/blue
+      const tint = ctx.createRadialGradient(cx, cy, R * 0.15, cx, cy, R);
+      tint.addColorStop(0, "rgba(255,240,160,0.25)");
+      tint.addColorStop(0.55, "rgba(255,160,40,0.12)");
+      tint.addColorStop(1, "rgba(255,90,0,0.2)");
+      ctx.fillStyle = tint;
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+    }
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = emissive ? `rgba(255,180,60,${0.4 * alpha})` : `rgba(200,220,255,${0.25 * alpha})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return true;
+  }
+
+  const state = {
+    radius: 0.04, spread: 0.1, energy: 1,
+    inflate: 0, shell: 0, flash: 0, shock: 0,
+    particles: 0, atoms: 0, molecules: 0,
+    stars: 0, galaxy: 0, sun: 0, planetesimals: 0,
+    earth: 0, life: 0, solar: 0, planets: 0, stage: 0,
+  };
+
+  const MODEL_LEN = 560;
+  const SOLAR_Z = MODEL_LEN * 0.92;
+  const cam = {
+    yaw: Math.PI * 0.52,
+    pitch: -0.12,
+    dist: 820,
+    targetYaw: Math.PI * 0.52,
+    targetPitch: -0.12,
+    targetDist: 820,
+    lookZ: MODEL_LEN * 0.48,
+    targetLookZ: MODEL_LEN * 0.48,
+    mode: "diagram",
+    userZoom: false,
+  };
+  const VIEW_PRESETS = {
+    diagram: { yaw: Math.PI * 0.52, pitch: -0.12, dist: 820, lookZ: MODEL_LEN * 0.48 },
+    orbit:   { yaw: 0.85, pitch: -0.32, dist: 700, lookZ: MODEL_LEN * 0.5 },
+    present: { yaw: Math.PI * 0.42, pitch: -0.18, dist: 380, lookZ: SOLAR_Z },
+  };
+
+  function setView(mode) {
+    cam.mode = mode;
+    cam.userZoom = false;
+    const p = VIEW_PRESETS[mode];
+    cam.targetYaw = p.yaw;
+    cam.targetPitch = p.pitch;
+    cam.targetDist = p.dist;
+    cam.targetLookZ = p.lookZ;
+    document.querySelectorAll(".views button").forEach((b) => {
+      b.classList.toggle("active", b.dataset.view === mode);
+    });
+    document.getElementById("hint-orbit").textContent =
+      mode === "diagram" ? "Classic expansion funnel · drag to orbit"
+      : mode === "present" ? "Present · Earth & solar system"
+      : "Free orbit";
+  }
+
+  function project(x, y, z, out) {
+    const cx = 0, cy = 0, cz = cam.lookZ;
+    let dx = x - cx, dy = y - cy, dz = z - cz;
+    const cyaw = Math.cos(cam.yaw), syaw = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    let x1 = dx * cyaw - dz * syaw;
+    let z1 = dx * syaw + dz * cyaw;
+    let y1 = dy * cp - z1 * sp;
+    let z2 = dy * sp + z1 * cp;
+    z2 += cam.dist;
+    const f = 560 / Math.max(40, z2);
+    out.x = W * 0.5 + x1 * f;
+    out.y = H * 0.42 + y1 * f;
+    out.s = f;
+    out.z = z2;
+    out.a = Math.min(1, Math.max(0, 1.25 - z2 / 1600));
+    return out;
+  }
+  const _p = { x: 0, y: 0, s: 1, z: 0, a: 1 };
+  const _q = { x: 0, y: 0, s: 1, z: 0, a: 1 };
+  const _r = { x: 0, y: 0, s: 1, z: 0, a: 1 };
+
+  /* Funnel radius — NASA trumpet, enlarged for presence */
+  function funnelRadius(u) {
+    u = Math.min(1, Math.max(0, u));
+    const inflation = 32 * (1 - Math.exp(-u / 0.035));
+    const growth = 95 * Math.pow(u, 0.85);
+    const accel = u > 0.7 ? 160 * Math.pow((u - 0.7) / 0.3, 1.7) : 0;
+    return 7 + inflation + growth + accel;
+  }
+
+  /* Particles fill the funnel volume */
+  const N = 1400;
+  const px = new Float32Array(N);
+  const py = new Float32Array(N);
+  const pz = new Float32Array(N);
+  const ox = new Float32Array(N);
+  const oy = new Float32Array(N);
+  const oz = new Float32Array(N);
+  const seed = new Float32Array(N);
+  const size = new Float32Array(N);
+  // 0 plasma · 1 atom · 2 star · 3 galaxy clump · 4 nebula
+  const kind = new Uint8Array(N);
+
+  for (let i = 0; i < N; i++) {
+    seed[i] = Math.random();
+    size[i] = 0.5 + Math.random() * 1.8;
+    // Place only in the correct chapter zones (never mix tip plasma with 1st stars)
+    const roll = seed[i];
+    let u;
+    if (roll < 0.16) {
+      // Quantum / fireball tip — before afterglow
+      u = Math.random() * Math.max(0.02, CMB_DIAGRAM_U - 0.01);
+      kind[i] = 0;
+    } else if (roll < 0.22) {
+      // Thin recombination shell near CMB (not into dark ages / stars)
+      u = CMB_DIAGRAM_U - 0.01 + Math.random() * 0.02;
+      kind[i] = 1;
+    } else if (roll < 0.55) {
+      // First stars → early galaxies
+      u = STARS_DIAGRAM_U + Math.random() * Math.max(0.05, 0.55 - STARS_DIAGRAM_U);
+      kind[i] = 2;
+    } else {
+      // Galaxies / late cosmos
+      u = 0.55 + Math.random() * 0.45;
+      kind[i] = seed[i] > 0.5 ? 3 : 4;
+    }
+    oz[i] = u * MODEL_LEN;
+    const ang = Math.random() * Math.PI * 2;
+    const r = Math.pow(Math.random(), 0.55);
+    ox[i] = Math.cos(ang) * r;
+    oy[i] = Math.sin(ang) * r;
+    px[i] = ox[i] * 10;
+    py[i] = oy[i] * 10;
+    pz[i] = oz[i];
+  }
+
+  const mouse = { x: 0, y: 0, sx: 0, sy: 0, active: false };
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  let W = 0, H = 0, dpr = 1;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  function epochAtProgress(p) {
+    let active = EPOCHS[0];
+    for (let i = 0; i < EPOCHS.length; i++) {
+      if (p + 1e-9 >= tToProgress(EPOCHS[i].t)) active = EPOCHS[i];
+    }
+    return active;
+  }
+
+  function drawFunnelGrid(progress) {
+    const lit = Math.max(0.02, progress);
+    const rings = 18;
+    const segs = 24;
+
+    // Soft volume fill for entire funnel
+    ctx.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const u = i / 28;
+      project(0, -funnelRadius(u), u * MODEL_LEN, _p);
+      if (i === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+    }
+    for (let i = 28; i >= 0; i--) {
+      const u = i / 28;
+      project(0, funnelRadius(u), u * MODEL_LEN, _p);
+      ctx.lineTo(_p.x, _p.y);
+    }
+    ctx.closePath();
+    project(0, 0, 0, _p);
+    project(0, 0, MODEL_LEN, _q);
+    const g = ctx.createLinearGradient(_p.x, 0, _q.x, 0);
+    g.addColorStop(0, "rgba(255,255,255,0.08)");
+    g.addColorStop(0.1, "rgba(140,170,255,0.05)");
+    g.addColorStop(0.35, "rgba(30,50,100,0.04)");
+    g.addColorStop(0.7, "rgba(70,90,160,0.06)");
+    g.addColorStop(1, "rgba(130,150,210,0.07)");
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // Meridians
+    for (let m = 0; m < 8; m++) {
+      const ang = (m / 8) * Math.PI * 2;
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i <= rings; i++) {
+        const u = i / rings;
+        const rad = funnelRadius(u);
+        project(Math.cos(ang) * rad, Math.sin(ang) * rad, u * MODEL_LEN, _p);
+        if (_p.z < 12) continue;
+        if (first) { ctx.moveTo(_p.x, _p.y); first = false; }
+        else ctx.lineTo(_p.x, _p.y);
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Rings — brighter up to current time; Dark Ages stay nearly invisible
+    for (let i = 1; i <= rings; i++) {
+      const u = i / rings;
+      const rad = funnelRadius(u);
+      const reached = u <= lit + 0.01;
+      const dark = inDarkAges(u);
+      ctx.beginPath();
+      for (let k = 0; k <= segs; k++) {
+        const a = (k / segs) * Math.PI * 2;
+        project(Math.cos(a) * rad, Math.sin(a) * rad, u * MODEL_LEN, _p);
+        if (k === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+      }
+      const base = dark ? 0.035 : u > 0.72 ? 0.2 : 0.1;
+      ctx.strokeStyle = `rgba(200,220,255,${reached ? base + (dark ? 0.02 : 0.12) : base * 0.4})`;
+      ctx.lineWidth = u > 0.72 && !dark ? 1.25 : 1;
+      ctx.stroke();
+    }
+
+    // Progress frontier ring
+    const radNow = funnelRadius(lit);
+    ctx.beginPath();
+    for (let k = 0; k <= segs; k++) {
+      const a = (k / segs) * Math.PI * 2;
+      project(Math.cos(a) * radNow, Math.sin(a) * radNow, lit * MODEL_LEN, _p);
+      if (k === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1.75;
+    ctx.stroke();
+  }
+
+  function drawSingularity(alpha) {
+    project(0, 0, MODEL_LEN * 0.008, _p);
+    const R = 110 * _p.s * (0.85 + state.energy * 0.55);
+    const g = ctx.createRadialGradient(_p.x, _p.y, 0, _p.x, _p.y, R);
+    g.addColorStop(0, `rgba(255,255,255,${Math.min(1, 1.05 * alpha)})`);
+    g.addColorStop(0.12, `rgba(255,250,230,${0.85 * alpha})`);
+    g.addColorStop(0.32, `rgba(255,220,160,${0.4 * alpha})`);
+    g.addColorStop(0.55, `rgba(180,200,255,${0.22 * alpha})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(_p.x, _p.y, R, 0, Math.PI * 2); ctx.fill();
+
+    // Starburst spikes — bright quantum fluctuations
+    ctx.save();
+    ctx.translate(_p.x, _p.y);
+    ctx.strokeStyle = `rgba(255,255,255,${0.65 * alpha})`;
+    ctx.lineWidth = 1.25;
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2 + state.energy * 0.2;
+      const len = (22 + (i % 3) * 14) * _p.s * (0.9 + state.energy * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 3 * _p.s, Math.sin(a) * 3 * _p.s);
+      ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    if (alpha > 0.25) {
+      project(0, funnelRadius(0.012) + 20, MODEL_LEN * 0.012, _q);
+      ctx.font = `560 ${Math.max(10, 12 * _p.s)}px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.85 * alpha})`;
+      ctx.textAlign = "center";
+      ctx.fillText("Quantum fluctuations", _q.x, _q.y);
+    }
+  }
+
+  function drawShockWave() {
+    const t = Math.max(state.shock, state.flash * 0.85);
+    if (t < 0.02) return;
+
+    project(0, 0, MODEL_LEN * 0.01, _p);
+    const base = Math.max(1, _p.s);
+
+    // Expanding spherical shock shells from the Big Bang tip
+    for (let i = 0; i < 5; i++) {
+      const local = Math.min(1, Math.max(0, t * 1.45 - i * 0.14));
+      if (local <= 0.01) continue;
+      const R = (28 + local * (220 + i * 36)) * (0.55 + base * 0.12);
+      const a = Math.pow(1 - local, 1.35) * (0.95 - i * 0.12);
+      ctx.beginPath();
+      ctx.arc(_p.x, _p.y, R, 0, Math.PI * 2);
+      ctx.strokeStyle = i % 2 === 0
+        ? `rgba(255,250,230,${a})`
+        : `rgba(180,210,255,${a * 0.85})`;
+      ctx.lineWidth = Math.max(1, (3.5 - local * 2.5) * (1 - i * 0.08));
+      ctx.stroke();
+
+      // Soft fill pulse on lead wave
+      if (i === 0 && local < 0.55) {
+        const g = ctx.createRadialGradient(_p.x, _p.y, R * 0.72, _p.x, _p.y, R * 1.08);
+        g.addColorStop(0, "rgba(255,255,255,0)");
+        g.addColorStop(0.55, `rgba(255,240,200,${0.18 * (1 - local)})`);
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(_p.x, _p.y, R * 1.08, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Brief forward blast along the future funnel axis
+    if (t > 0.08 && t < 0.85) {
+      const blast = (t - 0.08) / 0.77;
+      const z1 = MODEL_LEN * (0.02 + blast * 0.22);
+      project(0, 0, z1, _q);
+      const streak = ctx.createLinearGradient(_p.x, _p.y, _q.x, _q.y);
+      streak.addColorStop(0, `rgba(255,255,255,${0.55 * (1 - blast)})`);
+      streak.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = streak;
+      ctx.lineWidth = 6 * (1 - blast * 0.7);
+      ctx.beginPath();
+      ctx.moveTo(_p.x, _p.y);
+      ctx.lineTo(_q.x, _q.y);
+      ctx.stroke();
+    }
+  }
+
+  /** 0 = tip only (no trumpet); 1 = full diagram visible */
+  function diagramReveal() {
+    // Hide funnel until Big Bang / inflation shock unfolds
+    const fromShock = state.shock > 0.18 ? Math.min(1, (state.shock - 0.18) / 0.5) : 0;
+    const fromInflate = state.inflate > 0.05 ? Math.min(1, state.inflate) : 0;
+    const fromTime = state.radius > INF_DIAGRAM_U + 0.01
+      ? Math.min(1, (state.radius - INF_DIAGRAM_U) / 0.07)
+      : 0;
+    return Math.max(fromShock, fromInflate, fromTime);
+  }
+
+  function drawInflationBurst(lit) {
+    if (lit < INF_DIAGRAM_U - 0.03 && state.inflate < 0.05) return;
+    const u = INF_DIAGRAM_U;
+    const z = u * MODEL_LEN;
+    const appear = Math.min(1, Math.max(state.inflate, (lit - (u - 0.03)) / 0.05));
+    if (appear < 0.04) return;
+
+    const rad = funnelRadius(u) * (1.05 + state.inflate * 0.45);
+    project(0, 0, z, _q);
+    const glow = Math.max(40, rad * _q.s * 1.8);
+    const g = ctx.createRadialGradient(_q.x, _q.y, 0, _q.x, _q.y, glow);
+    g.addColorStop(0, `rgba(255,255,255,${0.7 * appear})`);
+    g.addColorStop(0.25, `rgba(255,240,200,${0.45 * appear})`);
+    g.addColorStop(0.55, `rgba(200,220,255,${0.2 * appear})`);
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(_q.x, _q.y, glow, 0, Math.PI * 2); ctx.fill();
+
+    ctx.beginPath();
+    for (let k = 0; k <= 48; k++) {
+      const a = (k / 48) * Math.PI * 2;
+      project(Math.cos(a) * rad, Math.sin(a) * rad, z, _p);
+      if (k === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+    }
+    ctx.strokeStyle = `rgba(255,255,255,${0.55 + appear * 0.4})`;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    project(0, -rad - 16, z, _p);
+    ctx.font = `560 11px "Geist Mono Variable", monospace`;
+    ctx.fillStyle = `rgba(255,255,255,${0.75 * appear})`;
+    ctx.textAlign = "center";
+    ctx.fillText("Inflation", _p.x, _p.y);
+  }
+
+  function drawDarkAgesVoid(lit) {
+    if (lit < DARK_AGES_U0 - 0.02) return;
+    const u0 = DARK_AGES_U0;
+    const u1 = Math.min(lit + 0.01, DARK_AGES_U1);
+    if (u1 <= u0) return;
+
+    // Paint empty dark band into the funnel — no stars, no glow
+    ctx.beginPath();
+    const steps = 16;
+    for (let i = 0; i <= steps; i++) {
+      const u = u0 + (u1 - u0) * (i / steps);
+      project(0, -funnelRadius(u) * 0.98, u * MODEL_LEN, _p);
+      if (i === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const u = u0 + (u1 - u0) * (i / steps);
+      project(0, funnelRadius(u) * 0.98, u * MODEL_LEN, _p);
+      ctx.lineTo(_p.x, _p.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fill();
+  }
+
+  function drawInflationLabel(progress) {
+    // kept for compatibility — burst draws its own label
+  }
+
+  /** WMAP-style temperature → RGB (blue → cyan → green → yellow → red) */
+  function cmbColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t < 0.25) {
+      const u = t / 0.25;
+      return [20 + u * 30, 40 + u * 100, 160 + u * 60];
+    }
+    if (t < 0.45) {
+      const u = (t - 0.25) / 0.2;
+      return [50 + u * 20, 140 + u * 80, 220 - u * 100];
+    }
+    if (t < 0.65) {
+      const u = (t - 0.45) / 0.2;
+      return [70 + u * 150, 220 - u * 40, 120 - u * 80];
+    }
+    if (t < 0.82) {
+      const u = (t - 0.65) / 0.17;
+      return [220 + u * 35, 180 - u * 80, 40 - u * 20];
+    }
+    const u = (t - 0.82) / 0.18;
+    return [255, 100 - u * 60, 20 + u * 20];
+  }
+
+  function hash2(i, j) {
+    const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  }
+
+  function valueNoise(x, y) {
+    const x0 = Math.floor(x), y0 = Math.floor(y);
+    const fx = x - x0, fy = y - y0;
+    const sx = fx * fx * (3 - 2 * fx);
+    const sy = fy * fy * (3 - 2 * fy);
+    const n00 = hash2(x0, y0);
+    const n10 = hash2(x0 + 1, y0);
+    const n01 = hash2(x0, y0 + 1);
+    const n11 = hash2(x0 + 1, y0 + 1);
+    const a = n00 + (n10 - n00) * sx;
+    const b = n01 + (n11 - n01) * sx;
+    return a + (b - a) * sy;
+  }
+
+  function fbmNoise(x, y) {
+    let v = 0, a = 0.5, f = 1;
+    for (let o = 0; o < 4; o++) {
+      v += a * valueNoise(x * f, y * f);
+      a *= 0.5;
+      f *= 2.05;
+    }
+    return v;
+  }
+
+  /** Procedural WMAP-like mottling (fallback / densify) */
+  function paintCMBProcedural(minX, minY, maxX, maxY, appear) {
+    const w = maxX - minX;
+    const h = maxY - minY;
+    const step = Math.max(1.6, Math.min(w, h) / 70);
+    for (let py = minY; py < maxY; py += step) {
+      for (let px = minX; px < maxX; px += step) {
+        const nx = (px - minX) / w;
+        const ny = (py - minY) / h;
+        // Oval mask roughly matching Mollweide
+        const ox = (nx - 0.5) * 2;
+        const oy = (ny - 0.5) * 2;
+        if (ox * ox + oy * oy > 1.02) continue;
+        let t = fbmNoise(nx * 9.5 + 2.1, ny * 9.5 + 0.7);
+        t = Math.max(0, Math.min(1, (t - 0.22) / 0.56));
+        const c = cmbColor(t);
+        const r = step * (0.55 + hash2(px | 0, py | 0) * 0.55);
+        ctx.fillStyle = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${0.72 * appear})`;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawCMBDisk(lit) {
+    // NASA layout: afterglow sits right after the Big Bang tip, not at log-time ~92%
+    const u = CMB_DIAGRAM_U;
+    const pastTip = lit >= u - 0.04 || state.atoms > 0.15 || state.shell > 0.15;
+    if (!pastTip) return;
+
+    const z = u * MODEL_LEN;
+    const rad = funnelRadius(u) * 0.78;
+    let appear = Math.min(1, Math.max(
+      (lit - (u - 0.04)) / 0.08,
+      state.atoms,
+      state.shell
+    ));
+    // Landmark disk — stay visible like the NASA trumpet
+    if (lit > u + 0.15) appear = Math.max(0.7, appear);
+    if (state.solar > 0.75) appear *= Math.max(0.28, 1 - (state.solar - 0.75) * 2);
+    if (cam.dist < 400) appear *= Math.max(0.45, (cam.dist - 200) / 200);
+    if (appear < 0.05) return;
+
+    const steps = 72;
+    const rim = [];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let k = 0; k <= steps; k++) {
+      const a = (k / steps) * Math.PI * 2;
+      project(Math.cos(a) * rad, Math.sin(a) * rad, z, _p);
+      rim.push(_p.x, _p.y);
+      if (_p.x < minX) minX = _p.x;
+      if (_p.x > maxX) maxX = _p.x;
+      if (_p.y < minY) minY = _p.y;
+      if (_p.y > maxY) maxY = _p.y;
+    }
+
+    // Soft backlight behind the afterglow slice
+    project(0, 0, z, _q);
+    const glowR = Math.max(maxX - minX, maxY - minY) * 0.55;
+    const backlight = ctx.createRadialGradient(_q.x, _q.y, glowR * 0.15, _q.x, _q.y, glowR);
+    backlight.addColorStop(0, `rgba(120,180,255,${0.18 * appear})`);
+    backlight.addColorStop(0.55, `rgba(40,80,160,${0.08 * appear})`);
+    backlight.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = backlight;
+    ctx.beginPath();
+    ctx.arc(_q.x, _q.y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    for (let k = 0; k <= steps; k++) {
+      const x = rim[k * 2], y = rim[k * 2 + 1];
+      if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.clip();
+
+    if (TEX.cmb && TEX.cmb.complete && TEX.cmb.naturalWidth) {
+      ctx.globalAlpha = 0.92 * appear;
+      const padX = (maxX - minX) * 0.04;
+      const padY = (maxY - minY) * 0.04;
+      ctx.drawImage(
+        TEX.cmb,
+        minX - padX, minY - padY,
+        (maxX - minX) + padX * 2,
+        (maxY - minY) + padY * 2
+      );
+    } else {
+      paintCMBProcedural(minX, minY, maxX, maxY, appear);
+    }
+    ctx.restore();
+
+    ctx.beginPath();
+    for (let k = 0; k <= steps; k++) {
+      const x = rim[k * 2], y = rim[k * 2 + 1];
+      if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(210,230,255,${0.65 * appear})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(100,160,255,${0.25 * appear})`;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    if (lit < u + 0.35 || appear > 0.5) {
+      project(0, rad + 18, z, _q);
+      ctx.font = `500 11px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.75 * appear})`;
+      ctx.textAlign = "center";
+      ctx.fillText("Afterglow light pattern", _q.x, _q.y);
+      ctx.font = `400 10px "Geist Mono Variable", monospace`;
+      ctx.fillStyle = `rgba(180,200,230,${0.55 * appear})`;
+      ctx.fillText("375,000 yrs · CMB", _q.x, _q.y + 14);
+    }
+  }
+
+  function drawEpochCallouts(lit) {
+    const callouts = [
+      { u: (DARK_AGES_U0 + DARK_AGES_U1) * 0.5, label: "Dark Ages", y: 1, need: DARK_AGES_U0 },
+      { t: YR(4e8), label: "1st Stars", sub: "≈ 400 Myr", y: -1 },
+      { t: YR(1e9), label: "Galaxies form", y: 1 },
+      { t: YR(9.2e9), label: "Dark energy", sub: "accelerated expansion", y: -1 },
+    ];
+    callouts.forEach((c) => {
+      const u = c.u != null ? c.u : tToDiagramU(c.t);
+      const need = c.need != null ? c.need : u - 0.03;
+      if (lit < need) return;
+      const z = u * MODEL_LEN;
+      const rad = funnelRadius(u);
+      const appear = Math.min(1, (lit - need) / 0.06);
+      project(0, c.y * (rad + 22), z, _p);
+      ctx.font = `500 11px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.65 * appear})`;
+      ctx.textAlign = "center";
+      ctx.fillText(c.label, _p.x, _p.y);
+      if (c.sub) {
+        ctx.font = `400 9px "Geist Mono Variable", monospace`;
+        ctx.fillStyle = `rgba(170,190,220,${0.5 * appear})`;
+        ctx.fillText(c.sub, _p.x, _p.y + 13);
+      }
+    });
+  }
+
+  function drawBottomScale(progress) {
+    project(0, funnelRadius(0) + 50, 0, _p);
+    project(0, funnelRadius(progress) + 50, progress * MODEL_LEN, _q);
+    // Prefer a stable bottom label in screen space
+    const y = H - 130;
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 1;
+    const x0 = W * 0.12;
+    const x1 = W * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.stroke();
+    // arrow heads
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 8, y - 4); ctx.lineTo(x0 + 8, y + 4); ctx.closePath(); ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x1 - 8, y - 4); ctx.lineTo(x1 - 8, y + 4); ctx.closePath(); ctx.fill();
+
+    ctx.font = "500 12px \"Geist Variable\", sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.textAlign = "center";
+    ctx.fillText("Big Bang Expansion", (x0 + x1) / 2, y - 10);
+    ctx.font = "400 11px \"Geist Mono Variable\", monospace";
+    ctx.fillStyle = "rgba(160,170,190,0.55)";
+    ctx.fillText("13.8 billion years", (x0 + x1) / 2, y + 18);
+  }
+
+  function drawSun(x, y, z, alpha, scale) {
+    if (alpha < 0.02) return;
+    project(x, y, z, _p);
+    const R = (scale || 18) * _p.s * (0.85 + alpha * 0.4);
+
+    // Young star = blue-white; settles to yellow as planets / Earth appear
+    const warmth = Math.max(0, Math.min(1, state.planets * 0.75 + Math.min(1, state.earth) * 0.35));
+    const cool = 1 - warmth;
+    const lerp = (a, b) => a + (b - a) * warmth;
+    const c0 = [lerp(210, 255), lerp(230, 248), lerp(255, 208)];
+    const c1 = [lerp(120, 255), lerp(170, 192), lerp(255, 32)];
+    const c2 = [lerp(40, 255), lerp(90, 120), lerp(255, 0)];
+    const stroke = `rgba(${Math.round(lerp(140, 255))},${Math.round(lerp(180, 180))},${Math.round(lerp(255, 60))},${0.45 * alpha})`;
+
+    const g = ctx.createRadialGradient(_p.x, _p.y, 0, _p.x, _p.y, R * 3.4);
+    g.addColorStop(0, `rgba(${c0.map(Math.round).join(",")},${0.55 * alpha})`);
+    g.addColorStop(0.25, `rgba(${c1.map(Math.round).join(",")},${0.45 * alpha})`);
+    g.addColorStop(0.55, `rgba(${c2.map(Math.round).join(",")},${0.18 * alpha})`);
+    g.addColorStop(1, `rgba(${Math.round(c2[0])},${Math.round(c2[1])},${Math.round(c2[2])},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(_p.x, _p.y, R * 3.4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(_p.x, _p.y, R, 0, Math.PI * 2);
+    const core = ctx.createRadialGradient(_p.x - R * 0.2, _p.y - R * 0.2, 0, _p.x, _p.y, R);
+    core.addColorStop(0, `rgb(${Math.round(lerp(235, 255))},${Math.round(lerp(245, 248))},${Math.round(lerp(255, 208))})`);
+    core.addColorStop(0.4, `rgb(${Math.round(lerp(140, 255))},${Math.round(lerp(180, 192))},${Math.round(lerp(255, 32))})`);
+    core.addColorStop(1, `rgb(${Math.round(lerp(50, 255))},${Math.round(lerp(100, 122))},${Math.round(lerp(255, 0))})`);
+    ctx.fillStyle = core;
+    ctx.fill();
+    ctx.restore();
+
+    // Texture only once the star has warmed (yellow G-type look)
+    if (warmth > 0.25 && TEX.sun && TEX.sun.complete && TEX.sun.naturalWidth) {
+      ctx.save();
+      ctx.globalAlpha = alpha * Math.min(1, (warmth - 0.25) / 0.55);
+      ctx.beginPath();
+      ctx.arc(_p.x, _p.y, R, 0, Math.PI * 2);
+      ctx.clip();
+      const iw = TEX.sun.naturalWidth;
+      const ih = TEX.sun.naturalHeight;
+      const spin = performance.now() * 0.00008;
+      const phase = ((spin % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2);
+      const destW = R * 4;
+      const x0 = _p.x - R - phase * destW;
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.drawImage(TEX.sun, 0, 0, iw, ih, x0, _p.y - R, destW, R * 2);
+      ctx.drawImage(TEX.sun, 0, 0, iw, ih, x0 + destW, _p.y - R, destW, R * 2);
+      ctx.globalCompositeOperation = "multiply";
+      const tint = ctx.createRadialGradient(_p.x, _p.y, R * 0.1, _p.x, _p.y, R);
+      tint.addColorStop(0, "#ffe8a0");
+      tint.addColorStop(0.55, "#ffb020");
+      tint.addColorStop(1, "#ff6a00");
+      ctx.fillStyle = tint;
+      ctx.fillRect(_p.x - R, _p.y - R, R * 2, R * 2);
+      ctx.restore();
+    } else if (cool > 0.2) {
+      // Soft blue corona for the newborn star
+      ctx.save();
+      ctx.globalAlpha = alpha * cool * 0.5;
+      const corona = ctx.createRadialGradient(_p.x, _p.y, R * 0.6, _p.x, _p.y, R * 2.2);
+      corona.addColorStop(0, "rgba(180,210,255,0.35)");
+      corona.addColorStop(0.5, "rgba(80,140,255,0.12)");
+      corona.addColorStop(1, "rgba(40,80,255,0)");
+      ctx.fillStyle = corona;
+      ctx.beginPath(); ctx.arc(_p.x, _p.y, R * 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(_p.x, _p.y, R, 0, Math.PI * 2);
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function paintEarthGlobe(cx, cy, R, stage, alpha, spin) {
+    if (alpha < 0.02 || R < 2) return;
+    if (stage >= 1 && TEX.earth) {
+      drawTexturedSphere(cx, cy, R, TEX.earth, spin, alpha, false);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+      if (stage === 1) {
+        ctx.fillStyle = `rgba(0,20,60,${0.35 * alpha})`;
+        ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+      } else if (stage === 2) {
+        ctx.fillStyle = `rgba(200,220,255,${0.28 * alpha})`;
+        ctx.beginPath(); ctx.ellipse(cx, cy - R * 0.7, R * 0.45, R * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx, cy + R * 0.72, R * 0.4, R * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+      const halo = ctx.createRadialGradient(cx, cy, R * 0.88, cx, cy, R * 1.35);
+      halo.addColorStop(0, `rgba(120,180,255,${0.2 * alpha})`);
+      halo.addColorStop(1, "rgba(120,180,255,0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    ctx.save();
+    const g = ctx.createRadialGradient(cx - R * 0.28, cy - R * 0.32, R * 0.05, cx, cy, R);
+    g.addColorStop(0, `rgba(255,220,140,${0.95 * alpha})`);
+    g.addColorStop(0.4, `rgba(255,120,40,${0.9 * alpha})`);
+    g.addColorStop(1, `rgba(40,10,5,${alpha})`);
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+    ctx.strokeStyle = `rgba(255,200,80,${0.4 * alpha})`;
+    ctx.lineWidth = Math.max(1, R * 0.04);
+    for (let i = 0; i < 7; i++) {
+      const a0 = spin + i * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a0) * R, cy + Math.sin(a0) * R);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,180,80,${0.4 * alpha})`;
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  function paintMoltenPlanet(cx, cy, R, alpha, spin, color) {
+    if (alpha < 0.02 || R < 1.5) return;
+    ctx.save();
+    const g = ctx.createRadialGradient(cx - R * 0.25, cy - R * 0.3, R * 0.05, cx, cy, R);
+    g.addColorStop(0, `rgba(255,240,180,${0.95 * alpha})`);
+    g.addColorStop(0.35, `rgba(255,140,40,${0.92 * alpha})`);
+    g.addColorStop(0.75, `rgba(${color[0]},${Math.min(120, color[1])},${Math.min(80, color[2])},${0.9 * alpha})`);
+    g.addColorStop(1, `rgba(40,15,8,${alpha})`);
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+    ctx.strokeStyle = `rgba(255,200,80,${0.35 * alpha})`;
+    ctx.lineWidth = Math.max(1, R * 0.05);
+    for (let i = 0; i < 5; i++) {
+      const a0 = spin + i * 1.1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a0) * R * 0.2, cy + Math.sin(a0) * R * 0.2);
+      ctx.lineTo(cx + Math.cos(a0) * R, cy + Math.sin(a0) * R);
+      ctx.stroke();
+    }
+    ctx.restore();
+    const glow = ctx.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.6);
+    glow.addColorStop(0, `rgba(255,140,40,${0.2 * alpha})`);
+    glow.addColorStop(1, "rgba(255,80,0,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function paintCoolingRock(cx, cy, R, alpha, color) {
+    if (alpha < 0.02 || R < 1.5) return;
+    ctx.save();
+    const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.08, cx, cy, R);
+    const r = Math.round(color[0] * 0.55 + 80);
+    const gch = Math.round(color[1] * 0.5 + 50);
+    const b = Math.round(color[2] * 0.45 + 40);
+    g.addColorStop(0, `rgba(${Math.min(255, r + 40)},${Math.min(255, gch + 30)},${b},${alpha})`);
+    g.addColorStop(0.55, `rgba(${r},${gch},${b},${alpha})`);
+    g.addColorStop(1, `rgba(${r * 0.35},${gch * 0.3},${b * 0.3},${alpha})`);
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = `rgba(200,180,160,${0.25 * alpha})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 0 = molten embryo → 1 = present-day world */
+  function planetMaturity(idx) {
+    const forming = Math.max(state.planets, state.planetesimals * 0.7);
+    if (forming < 0.05) return 0;
+    // Outer worlds lag slightly; Earth ages push everyone toward finished look
+    const age = Math.max(0, Math.min(1,
+      state.planets * 0.22
+      + Math.min(1, state.earth) * 0.28
+      + (Math.max(0, state.stage) / 4) * 0.5
+    ));
+    // Protoplanetary disk era stays molten
+    const m = state.planets < 0.25 ? age * 0.12 : age;
+    return Math.max(0, Math.min(1, m - idx * 0.035));
+  }
+
+  function paintEvolvingPlanet(cx, cy, R, pl, maturity, alpha, spin) {
+    if (alpha < 0.02 || R < 1.5) return;
+    const moltenA = alpha * Math.max(0, 1 - maturity / 0.45);
+    const rockA = alpha * Math.max(0, Math.min(1, (maturity - 0.15) / 0.4)) * Math.max(0, 1 - (maturity - 0.55) / 0.35);
+    const texA = alpha * Math.max(0, Math.min(1, (maturity - 0.4) / 0.55));
+
+    if (moltenA > 0.04) paintMoltenPlanet(cx, cy, R * (0.85 + maturity * 0.15), moltenA, spin, pl.color);
+    if (rockA > 0.04 && texA < 0.85) paintCoolingRock(cx, cy, R, rockA, pl.color);
+    if (texA > 0.04) {
+      drawTexturedSphere(cx, cy, R, TEX[pl.tex], spin, texA, false);
+      if (pl.rings && maturity > 0.65) {
+        ctx.strokeStyle = rgba([230, 210, 160], 0.55 * texA);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, R * 2.3, R * 0.7, -0.4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawSolarSystem() {
+    const focus = state.solar;
+    if (focus < 0.05) return;
+    const t = performance.now() * 0.001;
+    const z0 = SOLAR_Z;
+    const zoom = Math.max(0, Math.min(1, (720 - cam.dist) / 400));
+    const orbitScale = 0.55 + zoom * 1.05;
+    const presence = Math.max(state.planets, state.planetesimals * 0.85);
+
+    drawSun(0, 0, z0, state.sun * focus, 16 + zoom * 12);
+
+    if (presence < 0.05) return;
+
+    const earthStage = Math.round(Math.min(4, Math.max(0, state.stage)));
+    const earthLabel = state.earth < 0.55
+      ? "Earth · forming"
+      : earthStage >= 4
+        ? "Earth · Now"
+        : `Earth · ${EARTH_STAGES[earthStage].name}`;
+
+    PLANETS.forEach((pl, idx) => {
+      const maturity = planetMaturity(idx);
+      const appear = Math.max(0, Math.min(1, presence * (1.15 - idx * 0.06)));
+      if (appear < 0.05) return;
+
+      const rad = pl.orbit * orbitScale * (0.72 + appear * 0.28);
+      const c = pl.color;
+      ctx.beginPath();
+      for (let k = 0; k <= 64; k++) {
+        const a = (k / 64) * Math.PI * 2;
+        project(Math.cos(a) * rad, Math.sin(a) * rad * 0.32, z0, _p);
+        if (k === 0) ctx.moveTo(_p.x, _p.y); else ctx.lineTo(_p.x, _p.y);
+      }
+      ctx.strokeStyle = rgba(c, (0.08 + zoom * 0.12 + maturity * 0.08) * focus * appear);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const ang = t * pl.speed * 0.25 + idx * 0.7;
+      const wx = Math.cos(ang) * rad;
+      const wy = Math.sin(ang) * rad * 0.32;
+      project(wx, wy, z0, _p);
+
+      if (pl.earth && state.earth > 0.15) {
+        const R = Math.max(6, (12 + zoom * 14) * _p.s * (0.7 + Math.min(1, state.earth) * 0.3));
+        paintEarthGlobe(_p.x, _p.y, R, earthStage, focus * state.earth, t * 0.4);
+        // Moon after giant impact (Hadean onward)
+        if (state.earth > 0.55 && earthStage >= 0 && maturity > 0.25) {
+          const mx = wx + Math.cos(t * 2.2) * (10 + zoom * 8);
+          const my = wy + Math.sin(t * 2.2) * (3.5 + zoom * 2.5);
+          project(mx, my, z0, _q);
+          const mR = Math.max(2, (3 + zoom * 2) * _q.s);
+          const moonA = focus * state.earth * Math.min(1, 0.35 + maturity);
+          if (maturity < 0.5) paintMoltenPlanet(_q.x, _q.y, mR, moonA * 0.85, t * 0.2, [200, 180, 160]);
+          else drawTexturedSphere(_q.x, _q.y, mR, TEX.moon, t * 0.2, moonA, false);
+        }
+        if (zoom > 0.35) {
+          ctx.font = `560 ${Math.max(10, 12 * _p.s)}px "Geist Variable", sans-serif`;
+          ctx.fillStyle = `rgba(255,255,255,${0.85 * focus})`;
+          ctx.textAlign = "center";
+          ctx.fillText(earthLabel, _p.x, _p.y - R - 10);
+        }
+      } else if (!pl.earth) {
+        const sizeMul = 0.55 + appear * 0.25 + maturity * 0.35;
+        const pr = Math.max(2.8, pl.r * _p.s * (0.75 + zoom * 0.45) * sizeMul);
+        paintEvolvingPlanet(_p.x, _p.y, pr, pl, maturity, focus * appear, t * pl.speed * 0.15 + idx);
+        if (zoom > 0.25 && appear > 0.4) {
+          const label = maturity < 0.35 ? `${pl.name} · forming` : maturity < 0.75 ? `${pl.name} · young` : pl.name;
+          ctx.font = `500 ${Math.max(8, 9 * _p.s)}px "Geist Mono Variable", monospace`;
+          ctx.fillStyle = rgba(c, 0.7 * focus * appear);
+          ctx.textAlign = "center";
+          ctx.fillText(label, _p.x, _p.y + pr + 11);
+        }
+      }
+    });
+  }
+
+  function drawGalaxySprite(x, y, s, alpha, seed) {
+    if (alpha < 0.04 || s < 0.4) return;
+    if (s < 2.2) {
+      ctx.fillStyle = `rgba(220,230,255,${0.7 * alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, s * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(seed * Math.PI * 2);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 3.5);
+    g.addColorStop(0, `rgba(255,240,220,${0.7 * alpha})`);
+    g.addColorStop(0.35, `rgba(180,160,255,${0.22 * alpha})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 3.5, s * 1.3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.75 * alpha})`;
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.65, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function updateParticles() {
+    const progress = Math.max(0.02, state.radius);
+    mouse.sx += (mouse.x - mouse.sx) * 0.12;
+    mouse.sy += (mouse.y - mouse.sy) * 0.12;
+    const t = performance.now() * 0.001;
+
+    for (let i = 0; i < N; i++) {
+      const s = seed[i];
+      const u = oz[i] / MODEL_LEN;
+      if (u > progress + 0.02) {
+        size[i] *= 0.9;
+        continue;
+      }
+      const rad = funnelRadius(u) * (0.15 + s * 0.75);
+      let tx = ox[i] * rad;
+      let ty = oy[i] * rad;
+      let tz = oz[i];
+
+      // Drift / swirl
+      const swirl = t * (0.05 + s * 0.08);
+      const c = Math.cos(swirl), sn = Math.sin(swirl);
+      const rx = tx * c - ty * sn * 0.3;
+      const ry = tx * sn * 0.3 + ty * c;
+      tx = rx; ty = ry;
+
+      if (mouse.active) {
+        tx += ((mouse.sx / W) - 0.5) * 12 * (1 - u);
+        ty += ((mouse.sy / H) - 0.5) * 8 * (1 - u);
+      }
+
+      const ease = 0.05 + s * 0.04;
+      px[i] += (tx - px[i]) * ease;
+      py[i] += (ty - py[i]) * ease;
+      pz[i] += (tz - pz[i]) * ease;
+
+      // Visibility by era — hard zone locks so chapters don't overlap
+      let vis = 0;
+      if (inDarkAges(u)) {
+        size[i] = 0;
+        continue;
+      }
+      if (kind[i] === 0) {
+        // Quantum / fireball only at the tip, before afterglow
+        if (u < CMB_DIAGRAM_U - 0.005) {
+          vis = (0.35 + state.energy * 0.4) * (0.25 + state.particles * 0.75);
+          if (state.stars > 0.4) vis *= 0.15; // fade tip once stars era arrives
+        }
+      } else if (kind[i] === 1) {
+        // Atoms near CMB only
+        if (u >= CMB_DIAGRAM_U - 0.02 && u <= DARK_AGES_U0) {
+          vis = state.atoms * 0.7 + state.molecules * 0.35;
+        }
+      } else if (kind[i] === 2) {
+        // Background starfield after cosmic dawn — keep lit through solar system
+        if (u >= STARS_DIAGRAM_U) {
+          const field = Math.max(
+            state.stars,
+            state.galaxy * 0.55,
+            state.solar * 0.45,
+            state.sun * 0.4
+          );
+          if (field > 0.04) vis = Math.max(0.22, field);
+        }
+      } else {
+        // Galaxies / late field — stay visible around the young Sun
+        if (u > 0.48) {
+          const field = Math.max(
+            state.galaxy,
+            state.stars * 0.45,
+            state.solar * 0.4,
+            state.sun * 0.35
+          );
+          if (field > 0.04) vis = Math.max(0.2, field);
+        }
+      }
+      // Tip stays bright for quantum fluctuations / inflation
+      if (u < INF_DIAGRAM_U + 0.025 && kind[i] === 0) {
+        vis = Math.max(vis, 0.6 + state.energy * 0.4);
+      }
+      size[i] = (0.5 + s * 1.6) * vis;
+    }
+  }
+
+  const drawList = new Array(N);
+
+  function drawCosmos() {
+    const progress = Math.max(0.02, tl.progress());
+    const sunPlay = cosmicToPlay(SUN_PROGRESS()) / DURATION;
+
+    // Auto-zoom the model as we enter the late universe / solar system
+    // Skip dist override while the user is manually zooming (was fighting the wheel → lag)
+    if (cam.mode === "diagram" && !orbit.dragging && !cam.userZoom) {
+      if (progress > sunPlay) {
+        const t = Math.min(1, (progress - sunPlay) / Math.max(0.001, 1 - sunPlay));
+        const ease = t * t * (3 - 2 * t);
+        cam.targetLookZ = MODEL_LEN * 0.48 + ease * (SOLAR_Z - MODEL_LEN * 0.48);
+        cam.targetDist = 820 - ease * 400;
+        cam.targetPitch = -0.1 - ease * 0.14;
+        cam.targetYaw = Math.PI * 0.52 - ease * 0.1;
+      } else {
+        const preset = VIEW_PRESETS.diagram;
+        cam.targetLookZ = preset.lookZ;
+        cam.targetDist = preset.dist;
+        cam.targetPitch = preset.pitch;
+        cam.targetYaw = preset.yaw;
+      }
+    } else if (cam.mode === "diagram" && !orbit.dragging && cam.userZoom && progress > sunPlay) {
+      // Still ease look target toward solar system so the scene stays framed
+      const t = Math.min(1, (progress - sunPlay) / Math.max(0.001, 1 - sunPlay));
+      const ease = t * t * (3 - 2 * t);
+      cam.targetLookZ = MODEL_LEN * 0.48 + ease * (SOLAR_Z - MODEL_LEN * 0.48);
+    }
+
+    // Slow playback toward the end so solar system / Earth ages aren't rushed
+    if (!tl.paused()) {
+      let scale = userSpeed;
+      if (progress > sunPlay) {
+        const t = (progress - sunPlay) / Math.max(0.001, 1 - sunPlay);
+        scale = userSpeed * (0.55 - t * 0.35);
+      } else if (progress > sunPlay - 0.06) {
+        const t = (progress - (sunPlay - 0.06)) / 0.06;
+        scale = userSpeed * (1 - t * 0.45);
+      }
+      tl.timeScale(Math.max(0.15, scale));
+    }
+
+    cam.yaw += (cam.targetYaw - cam.yaw) * 0.06;
+    cam.pitch += (cam.targetPitch - cam.pitch) * 0.06;
+    cam.dist += (cam.targetDist - cam.dist) * 0.06;
+    cam.lookZ += (cam.targetLookZ - cam.lookZ) * 0.06;
+    if (cam.mode === "orbit" && !orbit.dragging) cam.targetYaw += 0.0008;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    const lit = Math.max(0.02, state.radius);
+    const reveal = diagramReveal();
+
+    // Initial: tip only — trumpet fades in after Big Bang shock
+    if (reveal > 0.02) {
+      ctx.save();
+      ctx.globalAlpha = reveal;
+      drawFunnelGrid(lit);
+      drawDarkAgesVoid(lit);
+      ctx.restore();
+    }
+
+    drawSingularity(0.75 + state.energy * 0.45);
+    drawShockWave();
+
+    if (reveal > 0.15) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, (reveal - 0.15) / 0.5);
+      drawInflationBurst(lit);
+      drawCMBDisk(lit);
+      ctx.restore();
+    }
+
+    let count = 0;
+    for (let i = 0; i < N; i++) {
+      if (size[i] < 0.08) continue;
+      const u = oz[i] / MODEL_LEN;
+      // Before diagram reveal, only tip / fireball sparks
+      if (reveal < 0.35 && u > INF_DIAGRAM_U + 0.03) continue;
+      if (pz[i] > lit * MODEL_LEN + 5) continue;
+      project(px[i], py[i], pz[i], _p);
+      if (_p.z < 8) continue;
+      if (_p.x < -40 || _p.x > W + 40 || _p.y < -40 || _p.y > H + 40) continue;
+      drawList[count++] = {
+        x: _p.x, y: _p.y, z: _p.z, a: _p.a,
+        s: size[i] * _p.s, k: kind[i], seed: seed[i],
+      };
+    }
+    drawList.length = count;
+
+    for (let i = 0; i < count; i++) {
+      const d = drawList[i];
+      let alpha = d.a * (0.35 + d.seed * 0.65);
+      if (reveal < 0.35 && d.k !== 0) alpha *= reveal;
+      if (alpha < 0.03) continue;
+      if (d.k === 3 || d.k === 4) {
+        drawGalaxySprite(d.x, d.y, Math.max(1.2, d.s), alpha * 0.85, d.seed);
+      } else if (d.k === 2) {
+        drawStarDot(d.x, d.y, Math.max(0.6, d.s * 0.7), alpha, d.seed > 0.7);
+      } else {
+        drawStarDot(
+          d.x, d.y,
+          Math.max(0.45, d.s * 0.55),
+          alpha * 0.75,
+          d.k === 0
+        );
+      }
+    }
+
+    const nearPresent = cam.dist < 420;
+    if (reveal > 0.45 && !nearPresent) drawEpochCallouts(lit);
+    if (reveal > 0.25) drawSolarSystem();
+    if (reveal > 0.45 && !nearPresent) drawBottomScale(lit);
+
+    if (lit > 0.92 && reveal > 0.5 && !nearPresent) {
+      project(0, funnelRadius(1) + 28, MODEL_LEN, _p);
+      ctx.font = `560 13px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.75 * state.earth})`;
+      ctx.textAlign = "center";
+      ctx.fillText("Present", _p.x, _p.y);
+    }
+
+    if (state.flash > 0.01) {
+      ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.28})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /* Master timeline — late cosmos gets more playback time */
+  const DURATION = 90;
+  const tl = gsap.timeline({ paused: true });
+
+  function flag(ep, key) {
+    const v = ep[key];
+    if (v === true) return 1;
+    if (typeof v === "number") return v;
+    return 0;
+  }
+
+  // Warp: first stretch of cosmic log-progress uses 42% of playtime; solar→now gets 58%
+  const LATE_P = tToProgress(YR(9.2e9));
+  function cosmicToPlay(p) {
+    if (p <= LATE_P) return (p / LATE_P) * 0.42 * DURATION;
+    return 0.42 * DURATION + ((p - LATE_P) / (1 - LATE_P)) * 0.58 * DURATION;
+  }
+  function playToCosmic(playP) {
+    if (playP <= 0.42) return (playP / 0.42) * LATE_P;
+    return LATE_P + ((playP - 0.42) / 0.58) * (1 - LATE_P);
+  }
+
+  EPOCHS.forEach((ep, idx) => {
+    const start = cosmicToPlay(tToProgress(ep.t));
+    const nextP = idx < EPOCHS.length - 1 ? tToProgress(EPOCHS[idx + 1].t) : 1;
+    const end = cosmicToPlay(Math.max(tToProgress(ep.tEnd ?? ep.t), nextP * 0.98));
+    const dur = Math.max(0.6, end - start);
+    tl.addLabel(ep.id, start);
+    // Longer crossfades in the solar-system era
+    const late = tToProgress(ep.t) >= LATE_P;
+    tl.to(state, {
+      // Light the funnel to this epoch's diagram position (not old log-radius)
+      radius: Math.min(1, tToDiagramU(ep.tEnd ?? ep.t) + 0.015),
+      spread: ep.spread,
+      energy: ep.energy,
+      inflate: flag(ep, "inflate"),
+      shell: flag(ep, "shell"),
+      particles: flag(ep, "particles"),
+      atoms: flag(ep, "atoms"),
+      molecules: flag(ep, "molecules"),
+      stars: flag(ep, "stars"),
+      galaxy: flag(ep, "galaxy"),
+      sun: flag(ep, "sun"),
+      planetesimals: flag(ep, "planetesimals"),
+      earth: flag(ep, "earth"),
+      life: flag(ep, "life"),
+      solar: flag(ep, "solar"),
+      planets: flag(ep, "planets"),
+      stage: typeof ep.stage === "number" ? ep.stage : 0,
+      shock: tToProgress(ep.t) >= tToProgress(1e-35) ? 1 : 0,
+      duration: late ? Math.min(dur * 0.9, 8) : Math.min(dur * 0.8, 3.8),
+      ease: ep.inflate ? "power3.out" : "sine.inOut",
+    }, start);
+    if (ep.inflate) {
+      tl.fromTo(state, { flash: 1, shock: 0 }, {
+        flash: 0, shock: 1, duration: 1.55, ease: "power2.out",
+      }, start);
+    }
+  });
+  tl.to({}, { duration: 0.01 }, DURATION);
+
+  /* UI */
+  const $time = document.getElementById("time-readout");
+  const $title = document.getElementById("epoch-title");
+  const $kicker = document.getElementById("epoch-kicker");
+  const $copy = document.getElementById("epoch-copy");
+  const $temp = document.getElementById("temp-readout");
+  const $fill = document.getElementById("track-fill");
+  const $thumb = document.getElementById("thumb");
+  const $markers = document.getElementById("markers");
+  const $playLabel = document.getElementById("play-label");
+  const $iconPlay = document.getElementById("icon-play");
+  const $iconPause = document.getElementById("icon-pause");
+
+  const LABEL_IDS = new Set(["planck", "particles", "atoms", "stars", "milkyway", "sun", "solarsystem", "hadean", "now"]);
+  const scrubView = { start: 0, span: 1 };
+  const $scrubZoom = document.getElementById("scrub-zoom");
+  const $endLeft = document.getElementById("scrub-end-left");
+  const $endRight = document.getElementById("scrub-end-right");
+
+  function scrubLocal(p) {
+    return (p - scrubView.start) / scrubView.span;
+  }
+  function scrubGlobal(local) {
+    return scrubView.start + local * scrubView.span;
+  }
+  function updateScrubChrome() {
+    $markers.querySelectorAll("[data-p]").forEach((el) => {
+      const p = parseFloat(el.dataset.p);
+      const local = scrubLocal(p);
+      if (local < -0.02 || local > 1.02) {
+        el.style.visibility = "hidden";
+      } else {
+        el.style.visibility = "visible";
+        el.style.left = (local * 100) + "%";
+      }
+    });
+    const zoom = 1 / scrubView.span;
+    $scrubZoom.textContent = zoom <= 1.02
+      ? "Scroll on scrubber to zoom · 1×"
+      : `Scroll to zoom · ${zoom.toFixed(1)}× · dbl-click reset`;
+    $endLeft.textContent = formatTime(progressToT(playToCosmic(scrubView.start)));
+    $endRight.textContent = formatTime(progressToT(playToCosmic(scrubView.start + scrubView.span)));
+  }
+
+  EPOCHS.forEach((ep) => {
+    const p = cosmicToPlay(tToProgress(ep.t)) / DURATION;
+    const m = document.createElement("div");
+    m.className = "marker" + (ep.major ? " major" : "") + (ep.id === "now" || ep.id === "hadean" ? " earth" : "");
+    m.dataset.p = String(p);
+    m.style.left = (p * 100) + "%";
+    $markers.appendChild(m);
+    if (LABEL_IDS.has(ep.id)) {
+      const lab = document.createElement("div");
+      lab.className = "marker-label";
+      lab.dataset.p = String(p);
+      lab.style.left = (p * 100) + "%";
+      lab.textContent = ep.label;
+      $markers.appendChild(lab);
+    }
+  });
+  updateScrubChrome();
+
+  const $stages = document.getElementById("earth-stages");
+  $stages.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const stage = parseInt(btn.dataset.stage, 10);
+      const ep = EPOCHS.find((e) => e.id === EARTH_STAGES[stage].epochId);
+      if (!ep) return;
+      tl.pause();
+      tl.progress(cosmicToPlay(tToProgress(ep.t)) / DURATION);
+      gsap.set(state, {
+        solar: 1, planets: 1, sun: 1, earth: 1, stage,
+        life: stage >= 1 ? (stage === 1 ? 0.35 : stage === 2 ? 0.6 : 1) : 0,
+        radius: 0.9 + stage * 0.02,
+        spread: 0.06,
+      });
+      setView("present");
+    });
+  });
+
+  let currentEpochId = "";
+  function syncUI() {
+    const p = tl.progress();
+    const cosmic = playToCosmic(p);
+    $time.textContent = formatTime(progressToT(cosmic));
+    const local = Math.max(0, Math.min(1, scrubLocal(p)));
+    $fill.style.width = local * 100 + "%";
+    $thumb.style.left = local * 100 + "%";
+    $thumb.setAttribute("aria-valuenow", Math.round(p * 100));
+    const active = epochAtProgress(cosmic);
+    if (active.id !== currentEpochId) {
+      currentEpochId = active.id;
+      $title.textContent = active.title;
+      $kicker.textContent = active.kicker;
+      $copy.textContent = active.copy;
+      $temp.textContent = formatTemp(active.temp);
+      gsap.fromTo([$title, $kicker, $copy], { opacity: 0, y: 6 }, {
+        opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "power2.out", overwrite: true,
+      });
+    }
+
+    const showStages = state.earth > 0.3 || !!active.stage || active.id === "solarsystem";
+    $stages.classList.toggle("visible", showStages);
+    const activeStage = Math.round(Math.min(4, Math.max(0, state.stage)));
+    $stages.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("active", parseInt(b.dataset.stage, 10) === activeStage && state.earth > 0.5);
+    });
+
+    const playing = !tl.paused() && p < 1;
+    $playLabel.textContent = playing ? "Pause" : p >= 1 ? "Replay" : "Play";
+    $iconPlay.style.display = playing ? "none" : "";
+    $iconPause.style.display = playing ? "" : "none";
+  }
+
+  gsap.ticker.add(() => {
+    updateParticles();
+    drawCosmos();
+    syncUI();
+  });
+
+  const orbit = { dragging: false, lx: 0, ly: 0 };
+  canvas.addEventListener("pointerdown", (e) => {
+    if (e.target !== canvas) return;
+    orbit.dragging = true; orbit.lx = e.clientX; orbit.ly = e.clientY;
+    canvas.classList.add("is-orbiting");
+    canvas.setPointerCapture(e.pointerId);
+    if (cam.mode === "diagram") setView("orbit");
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true;
+    if (!orbit.dragging) return;
+    cam.targetYaw += (e.clientX - orbit.lx) * 0.005;
+    cam.targetPitch = Math.max(-1.1, Math.min(0.6, cam.targetPitch + (e.clientY - orbit.ly) * 0.004));
+    orbit.lx = e.clientX; orbit.ly = e.clientY;
+    if (cam.mode !== "orbit") {
+      cam.mode = "orbit";
+      document.querySelectorAll(".views button").forEach((b) => b.classList.toggle("active", b.dataset.view === "orbit"));
+    }
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    orbit.dragging = false;
+    canvas.classList.remove("is-orbiting");
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener("pointerleave", () => { mouse.active = false; });
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    cam.userZoom = true;
+    cam.targetDist = Math.max(160, Math.min(980, cam.targetDist + e.deltaY * 0.45));
+  }, { passive: false });
+
+  document.querySelectorAll(".views button").forEach((btn) => {
+    btn.addEventListener("click", () => setView(btn.dataset.view));
+  });
+
+  const scrubEl = document.getElementById("scrub");
+  function scrubTo(clientX) {
+    const rect = scrubEl.getBoundingClientRect();
+    const local = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    tl.progress(Math.min(1, Math.max(0, scrubGlobal(local))));
+  }
+  function zoomScrub(clientX, deltaY) {
+    const rect = scrubEl.getBoundingClientRect();
+    const local = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const anchor = scrubGlobal(local);
+    const factor = deltaY > 0 ? 1.18 : 1 / 1.18;
+    const newSpan = Math.min(1, Math.max(0.035, scrubView.span * factor));
+    let newStart = anchor - local * newSpan;
+    newStart = Math.max(0, Math.min(1 - newSpan, newStart));
+    scrubView.start = newStart;
+    scrubView.span = newSpan;
+    updateScrubChrome();
+    syncUI();
+  }
+  const hit = document.createElement("div");
+  hit.setAttribute("aria-hidden", "true");
+  hit.style.cssText = "position:absolute;inset:0;z-index:2;cursor:grab;";
+  scrubEl.insertBefore(hit, $thumb);
+  gsap.registerPlugin(Draggable);
+  Draggable.create(hit, {
+    type: "x", bounds: scrubEl, cursor: "grab", activeCursor: "grabbing",
+    onPress(e) { scrubEl.classList.add("is-dragging"); tl.pause(); scrubTo(e.clientX); gsap.set(this.target, { x: 0 }); },
+    onDrag() { scrubTo(this.pointerEvent.clientX); gsap.set(this.target, { x: 0 }); },
+    onRelease() { scrubEl.classList.remove("is-dragging"); gsap.set(this.target, { x: 0 }); },
+  });
+  scrubEl.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    zoomScrub(e.clientX, e.deltaY);
+  }, { passive: false });
+  scrubEl.addEventListener("dblclick", () => {
+    scrubView.start = 0;
+    scrubView.span = 1;
+    updateScrubChrome();
+    syncUI();
+  });
+
+  document.getElementById("btn-play").addEventListener("click", () => {
+    if (tl.progress() >= 1) { tl.progress(0); tl.play(); return; }
+    if (tl.paused()) tl.play(); else tl.pause();
+  });
+  document.getElementById("btn-restart").addEventListener("click", () => { tl.pause(); tl.progress(0); });
+  document.querySelectorAll(".speed button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".speed button").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      userSpeed = parseFloat(btn.dataset.speed);
+      tl.timeScale(userSpeed);
+    });
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); document.getElementById("btn-play").click(); }
+    else if (e.code === "ArrowRight") { tl.progress(Math.min(1, tl.progress() + 0.015)); tl.pause(); }
+    else if (e.code === "ArrowLeft") { tl.progress(Math.max(0, tl.progress() - 0.015)); tl.pause(); }
+    else if (e.code === "Digit1") setView("diagram");
+    else if (e.code === "Digit2") setView("orbit");
+    else if (e.code === "Digit3") setView("present");
+    else if (e.code === "Home") { tl.progress(0); tl.pause(); }
+    else if (e.code === "End") { tl.progress(1); tl.pause(); }
+  });
+
+  setView("diagram");
+  tl.progress(0);
+  syncUI();
+  window.Cosmos = { tToProgress, progressToT, formatTime, tl, EPOCHS, state, cam, funnelRadius };
+})();
+</script>
+</body>
+</html>

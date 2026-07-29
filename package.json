@@ -1,0 +1,10 @@
+{
+  "name": "big-bang-timeline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive Big Bang expansion timeline — GSAP scrubber, NASA-style funnel, solar system finale",
+  "scripts": {
+    "dev": "npx --yes serve . -p 3000",
+    "start": "npx --yes serve . -p 3000"
+  }
+}
