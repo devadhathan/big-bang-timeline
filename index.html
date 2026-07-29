@@ -180,7 +180,7 @@
   .scrub-wrap { position: relative; }
   .scrub-zoom {
     font-family: var(--font-mono); font-size: 9px; color: var(--dim);
-    letter-spacing: 0.04em; text-transform: uppercase; text-align: right;
+    letter-spacing: 0.04em; text-transform: uppercase; text-align: left;
     white-space: nowrap;
   }
   .scrub { position: relative; height: 44px; touch-action: none; border-radius: var(--radius-sm); overflow: hidden; cursor: grab; }
@@ -280,13 +280,13 @@
       <button type="button" class="btn view-present" id="btn-present" aria-label="Present view">Present</button>
     </div>
     <div class="scrub-bar">
+      <div class="scrub-zoom" id="scrub-zoom">Scroll zoom · drag scrub · Shift-drag pan</div>
       <div class="speed" role="group" aria-label="Playback speed">
         <button data-speed="0.5">0.5×</button>
         <button data-speed="1" class="active">1×</button>
         <button data-speed="2">2×</button>
         <button data-speed="4">4×</button>
       </div>
-      <div class="scrub-zoom" id="scrub-zoom">Scroll zoom · drag scrub · Shift-drag pan</div>
     </div>
     <div class="scrub-wrap">
       <div class="scrub" id="scrub">
