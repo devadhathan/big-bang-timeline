@@ -698,20 +698,20 @@
   const SOLAR_Z = MODEL_LEN * 0.92;
   const cam = {
     yaw: Math.PI * 0.52,
-    pitch: -0.12,
-    dist: 820,
+    pitch: -0.14,
+    dist: 980,
     targetYaw: Math.PI * 0.52,
-    targetPitch: -0.12,
-    targetDist: 820,
+    targetPitch: -0.14,
+    targetDist: 980,
     lookZ: MODEL_LEN * 0.48,
     targetLookZ: MODEL_LEN * 0.48,
     mode: "diagram",
     userZoom: false,
   };
   const VIEW_PRESETS = {
-    diagram: { yaw: Math.PI * 0.52, pitch: -0.12, dist: 820, lookZ: MODEL_LEN * 0.48 },
-    orbit:   { yaw: 0.85, pitch: -0.32, dist: 700, lookZ: MODEL_LEN * 0.5 },
-    present: { yaw: Math.PI * 0.42, pitch: -0.18, dist: 380, lookZ: SOLAR_Z },
+    diagram: { yaw: Math.PI * 0.52, pitch: -0.14, dist: 980, lookZ: MODEL_LEN * 0.48 },
+    orbit:   { yaw: 0.85, pitch: -0.34, dist: 820, lookZ: MODEL_LEN * 0.5 },
+    present: { yaw: Math.PI * 0.42, pitch: -0.18, dist: 400, lookZ: SOLAR_Z },
   };
 
   function setView(mode) {
@@ -755,13 +755,13 @@
   const _q = { x: 0, y: 0, s: 1, z: 0, a: 1 };
   const _r = { x: 0, y: 0, s: 1, z: 0, a: 1 };
 
-  /* Funnel radius — NASA trumpet, enlarged for presence */
+  /* Funnel radius — wide NASA-style trumpet */
   function funnelRadius(u) {
     u = Math.min(1, Math.max(0, u));
-    const inflation = 32 * (1 - Math.exp(-u / 0.035));
-    const growth = 95 * Math.pow(u, 0.85);
-    const accel = u > 0.7 ? 160 * Math.pow((u - 0.7) / 0.3, 1.7) : 0;
-    return 7 + inflation + growth + accel;
+    const inflation = 52 * (1 - Math.exp(-u / 0.032));
+    const growth = 155 * Math.pow(u, 0.82);
+    const accel = u > 0.68 ? 260 * Math.pow((u - 0.68) / 0.32, 1.55) : 0;
+    return 12 + inflation + growth + accel;
   }
 
   /* Particles fill the funnel volume */
@@ -1660,6 +1660,155 @@
     });
   }
 
+  function drawMilkyWay(lit) {
+    const appear = Math.max(state.galaxy, state.stars * 0.35);
+    if (appear < 0.12 || lit < tToDiagramU(YR(1e9)) - 0.02) return;
+
+    // Sit in the modern-galaxies stretch, just before the solar-system tip
+    const u = Math.min(0.82, Math.max(tToDiagramU(YR(8.5e9)), 0.62));
+    if (lit < u - 0.04) return;
+    const fade = Math.min(1, (lit - (u - 0.04)) / 0.08) * Math.min(1, appear);
+    if (fade < 0.05) return;
+
+    const z0 = u * MODEL_LEN;
+    const t = performance.now() * 0.00012;
+    const diskR = funnelRadius(u) * 0.55;
+    const tilt = 0.38; // foreshorten the disk
+
+    // Soft galactic halo / dust fog
+    project(0, 0, z0, _q);
+    const halo = Math.max(60, diskR * _q.s * 1.35);
+    const fog = ctx.createRadialGradient(_q.x, _q.y, 0, _q.x, _q.y, halo);
+    fog.addColorStop(0, `rgba(255,230,190,${0.16 * fade})`);
+    fog.addColorStop(0.35, `rgba(120,100,180,${0.12 * fade})`);
+    fog.addColorStop(0.7, `rgba(40,50,100,${0.06 * fade})`);
+    fog.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = fog;
+    ctx.beginPath();
+    ctx.ellipse(_q.x, _q.y, halo * 1.15, halo * 0.55, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dusty spiral arms (barred spiral feel)
+    const arms = 2;
+    for (let a = 0; a < arms; a++) {
+      const phase = a * Math.PI + t * 0.35;
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i <= 56; i++) {
+        const f = i / 56;
+        const ang = phase + f * 3.6;
+        const r = diskR * (0.12 + f * 0.88);
+        const wx = Math.cos(ang) * r;
+        const wy = Math.sin(ang) * r * tilt;
+        project(wx, wy, z0 + Math.sin(ang * 2) * 4, _p);
+        if (first) { ctx.moveTo(_p.x, _p.y); first = false; }
+        else ctx.lineTo(_p.x, _p.y);
+      }
+      ctx.strokeStyle = `rgba(200,210,255,${(0.22 + a * 0.08) * fade})`;
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      // Arm star clumps + pink nebulae
+      for (let i = 4; i <= 52; i += 3) {
+        const f = i / 56;
+        const ang = phase + f * 3.6;
+        const r = diskR * (0.12 + f * 0.88);
+        const wx = Math.cos(ang) * r;
+        const wy = Math.sin(ang) * r * tilt;
+        project(wx, wy, z0, _p);
+        const s = Math.max(0.8, (1.1 + (i % 5) * 0.35) * _p.s);
+        if (i % 6 === 0) {
+          // H II / cloud glow
+          const ng = ctx.createRadialGradient(_p.x, _p.y, 0, _p.x, _p.y, s * 5);
+          ng.addColorStop(0, `rgba(255,140,180,${0.35 * fade})`);
+          ng.addColorStop(0.45, `rgba(120,80,200,${0.12 * fade})`);
+          ng.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = ng;
+          ctx.beginPath();
+          ctx.arc(_p.x, _p.y, s * 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        drawStarDot(_p.x, _p.y, s, 0.55 * fade, i % 7 === 0);
+      }
+    }
+
+    // Secondary dusty lanes
+    for (let lane = 0; lane < 3; lane++) {
+      const phase = lane * 2.1 + 0.4 + t * 0.2;
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i <= 40; i++) {
+        const f = i / 40;
+        const ang = phase + f * 2.8;
+        const r = diskR * (0.2 + f * 0.7);
+        project(Math.cos(ang) * r, Math.sin(ang) * r * tilt * 0.9, z0, _p);
+        if (first) { ctx.moveTo(_p.x, _p.y); first = false; }
+        else ctx.lineTo(_p.x, _p.y);
+      }
+      ctx.strokeStyle = `rgba(30,20,40,${0.35 * fade})`;
+      ctx.lineWidth = 3.5 - lane * 0.6;
+      ctx.stroke();
+    }
+
+    // Central bulge
+    project(0, 0, z0, _q);
+    const bulge = Math.max(14, diskR * _q.s * 0.28);
+    const bg = ctx.createRadialGradient(_q.x, _q.y, 0, _q.x, _q.y, bulge);
+    bg.addColorStop(0, `rgba(255,245,220,${0.85 * fade})`);
+    bg.addColorStop(0.35, `rgba(255,190,120,${0.45 * fade})`);
+    bg.addColorStop(0.7, `rgba(120,70,40,${0.18 * fade})`);
+    bg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.ellipse(_q.x, _q.y, bulge * 1.1, bulge * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sagittarius A* — central black hole + accretion glow
+    const bhR = Math.max(3.5, bulge * 0.18);
+    const accr = ctx.createRadialGradient(_q.x, _q.y, bhR * 0.6, _q.x, _q.y, bhR * 3.2);
+    accr.addColorStop(0, `rgba(255,200,120,${0.55 * fade})`);
+    accr.addColorStop(0.35, `rgba(255,120,60,${0.28 * fade})`);
+    accr.addColorStop(0.7, `rgba(120,60,255,${0.12 * fade})`);
+    accr.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = accr;
+    ctx.beginPath();
+    ctx.arc(_q.x, _q.y, bhR * 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Accretion disk ring
+    ctx.beginPath();
+    ctx.ellipse(_q.x, _q.y, bhR * 2.4, bhR * 0.85, -0.4, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,180,100,${0.55 * fade})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Event horizon
+    ctx.beginPath();
+    ctx.arc(_q.x, _q.y, bhR, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,0,0,${0.95 * fade})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,220,160,${0.35 * fade})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Photon-ring hint
+    ctx.beginPath();
+    ctx.arc(_q.x, _q.y, bhR * 1.35, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,160,80,${0.4 * fade})`;
+    ctx.lineWidth = 1.25;
+    ctx.stroke();
+
+    if (fade > 0.35) {
+      ctx.font = `560 ${Math.max(11, 13 * Math.min(1.2, _q.s))}px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.8 * fade})`;
+      ctx.textAlign = "center";
+      ctx.fillText("Milky Way", _q.x, _q.y - bulge - 16);
+      ctx.font = `400 9px "Geist Mono Variable", monospace`;
+      ctx.fillStyle = `rgba(200,180,255,${0.55 * fade})`;
+      ctx.fillText("Sagittarius A* · central black hole", _q.x, _q.y - bulge - 3);
+    }
+  }
+
   function drawGalaxySprite(x, y, s, alpha, seed) {
     if (alpha < 0.04 || s < 0.4) return;
     if (s < 2.2) {
@@ -1779,7 +1928,7 @@
         const t = Math.min(1, (progress - sunPlay) / Math.max(0.001, 1 - sunPlay));
         const ease = t * t * (3 - 2 * t);
         cam.targetLookZ = MODEL_LEN * 0.48 + ease * (SOLAR_Z - MODEL_LEN * 0.48);
-        cam.targetDist = 820 - ease * 400;
+        cam.targetDist = 980 - ease * 480;
         cam.targetPitch = -0.1 - ease * 0.14;
         cam.targetYaw = Math.PI * 0.52 - ease * 0.1;
       } else {
@@ -1882,6 +2031,7 @@
     if (reveal > 0.45) drawEpochCallouts(lit);
     if (reveal > 0.25) {
       drawFamousCosmos(lit);
+      drawMilkyWay(lit);
       drawSolarSystem();
       drawEarthMilestones(lit);
     }
