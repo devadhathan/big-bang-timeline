@@ -145,7 +145,7 @@
     -webkit-backdrop-filter: blur(16px);
     padding: 14px 18px calc(14px + var(--safe));
   }
-  .transport { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .transport { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .btn {
     appearance: none; border: 1px solid var(--faint); background: var(--panel);
     color: var(--fg); width: 36px; height: 36px; border-radius: 999px;
@@ -159,8 +159,17 @@
     border-radius: 999px; height: 36px;
   }
   .btn.primary:hover { background: #e8e8e8; }
+  .btn.view-present {
+    width: auto; padding: 0 14px; height: 36px;
+    font-size: 12px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .btn.view-present.active { background: #fff; color: #000; border-color: #fff; }
+  .scrub-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px;
+  }
   .speed {
-    margin-left: auto; display: flex; gap: 2px;
+    display: flex; gap: 2px; flex-shrink: 0;
     padding: 3px; border: 1px solid var(--faint); border-radius: 999px; background: #050505;
   }
   .speed button {
@@ -170,11 +179,12 @@
   .speed button.active { color: #000; background: #fff; border-color: #fff; }
   .scrub-wrap { position: relative; }
   .scrub-zoom {
-    position: absolute; right: 0; top: -18px;
     font-family: var(--font-mono); font-size: 9px; color: var(--dim);
-    letter-spacing: 0.04em; text-transform: uppercase;
+    letter-spacing: 0.04em; text-transform: uppercase; text-align: right;
+    white-space: nowrap;
   }
-  .scrub { position: relative; height: 44px; touch-action: none; border-radius: var(--radius-sm); overflow: hidden; }
+  .scrub { position: relative; height: 44px; touch-action: none; border-radius: var(--radius-sm); overflow: hidden; cursor: grab; }
+  .scrub.is-panning { cursor: grabbing; }
   .track {
     position: absolute; left: 0; right: 0; top: 18px; height: 4px;
     background: var(--faint); border-radius: 999px; overflow: hidden;
@@ -233,7 +243,6 @@
     <div class="views" role="group" aria-label="Camera view">
       <button type="button" data-view="diagram" class="active">Diagram</button>
       <button type="button" data-view="orbit">Orbit</button>
-      <button type="button" data-view="present">Present</button>
     </div>
     <div class="clock" aria-live="polite">
       <span class="label">t =</span>
@@ -268,15 +277,18 @@
         <svg id="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         <span id="play-label">Play</span>
       </button>
+      <button type="button" class="btn view-present" id="btn-present" aria-label="Present view">Present</button>
+    </div>
+    <div class="scrub-bar">
       <div class="speed" role="group" aria-label="Playback speed">
         <button data-speed="0.5">0.5×</button>
         <button data-speed="1" class="active">1×</button>
         <button data-speed="2">2×</button>
         <button data-speed="4">4×</button>
       </div>
+      <div class="scrub-zoom" id="scrub-zoom">Scroll zoom · drag scrub · Shift-drag pan</div>
     </div>
     <div class="scrub-wrap">
-      <div class="scrub-zoom" id="scrub-zoom">Scroll on scrubber to zoom · 1×</div>
       <div class="scrub" id="scrub">
         <div class="track"><div class="track-fill" id="track-fill"></div></div>
         <div class="markers" id="markers"></div>
@@ -699,6 +711,8 @@
     document.querySelectorAll(".views button").forEach((b) => {
       b.classList.toggle("active", b.dataset.view === mode);
     });
+    const $present = document.getElementById("btn-present");
+    if ($present) $present.classList.toggle("active", mode === "present");
     document.getElementById("hint-orbit").textContent =
       mode === "diagram" ? "Classic expansion funnel · drag to orbit"
       : mode === "present" ? "Present · Earth & solar system"
@@ -1478,9 +1492,10 @@
     if (focus < 0.05) return;
     const t = performance.now() * 0.001;
     const z0 = SOLAR_Z;
-    const zoom = Math.max(0, Math.min(1, (720 - cam.dist) / 400));
+    const zoom = Math.max(0, Math.min(1, (820 - cam.dist) / 500));
     const orbitScale = 0.55 + zoom * 1.05;
     const presence = Math.max(state.planets, state.planetesimals * 0.85);
+    const showLabels = cam.dist < 760; // keep labels when zoomed toward the model
 
     drawSun(0, 0, z0, state.sun * focus, 16 + zoom * 12);
 
@@ -1528,7 +1543,7 @@
           if (maturity < 0.5) paintMoltenPlanet(_q.x, _q.y, mR, moonA * 0.85, t * 0.2, [200, 180, 160]);
           else drawTexturedSphere(_q.x, _q.y, mR, TEX.moon, t * 0.2, moonA, false);
         }
-        if (zoom > 0.35) {
+        if (showLabels) {
           ctx.font = `560 ${Math.max(10, 12 * _p.s)}px "Geist Variable", sans-serif`;
           ctx.fillStyle = `rgba(255,255,255,${0.85 * focus})`;
           ctx.textAlign = "center";
@@ -1538,7 +1553,7 @@
         const sizeMul = 0.55 + appear * 0.25 + maturity * 0.35;
         const pr = Math.max(2.8, pl.r * _p.s * (0.75 + zoom * 0.45) * sizeMul);
         paintEvolvingPlanet(_p.x, _p.y, pr, pl, maturity, focus * appear, t * pl.speed * 0.15 + idx);
-        if (zoom > 0.25 && appear > 0.4) {
+        if (showLabels && appear > 0.35) {
           const label = maturity < 0.35 ? `${pl.name} · forming` : maturity < 0.75 ? `${pl.name} · young` : pl.name;
           ctx.font = `500 ${Math.max(8, 9 * _p.s)}px "Geist Mono Variable", monospace`;
           ctx.fillStyle = rgba(c, 0.7 * focus * appear);
@@ -1767,11 +1782,12 @@
     }
 
     const nearPresent = cam.dist < 420;
-    if (reveal > 0.45 && !nearPresent) drawEpochCallouts(lit);
+    // Keep model labels visible when zoomed in
+    if (reveal > 0.45) drawEpochCallouts(lit);
     if (reveal > 0.25) drawSolarSystem();
     if (reveal > 0.45 && !nearPresent) drawBottomScale(lit);
 
-    if (lit > 0.92 && reveal > 0.5 && !nearPresent) {
+    if (lit > 0.92 && reveal > 0.5) {
       project(0, funnelRadius(1) + 28, MODEL_LEN, _p);
       ctx.font = `560 13px "Geist Variable", sans-serif`;
       ctx.fillStyle = `rgba(255,255,255,${0.75 * state.earth})`;
@@ -1884,8 +1900,8 @@
     });
     const zoom = 1 / scrubView.span;
     $scrubZoom.textContent = zoom <= 1.02
-      ? "Scroll on scrubber to zoom · 1×"
-      : `Scroll to zoom · ${zoom.toFixed(1)}× · dbl-click reset`;
+      ? "Scroll zoom · drag to scrub · Shift-drag pan"
+      : `${zoom.toFixed(1)}× · drag scrub · Shift-drag pan · dbl-click reset`;
     $endLeft.textContent = formatTime(progressToT(playToCosmic(scrubView.start)));
     $endRight.textContent = formatTime(progressToT(playToCosmic(scrubView.start + scrubView.span)));
   }
@@ -1983,6 +1999,8 @@
     if (cam.mode !== "orbit") {
       cam.mode = "orbit";
       document.querySelectorAll(".views button").forEach((b) => b.classList.toggle("active", b.dataset.view === "orbit"));
+      const $present = document.getElementById("btn-present");
+      if ($present) $present.classList.remove("active");
     }
   });
   canvas.addEventListener("pointerup", (e) => {
@@ -2007,6 +2025,14 @@
     const local = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
     tl.progress(Math.min(1, Math.max(0, scrubGlobal(local))));
   }
+  function panScrub(deltaX) {
+    if (scrubView.span >= 0.999) return;
+    const rect = scrubEl.getBoundingClientRect();
+    const delta = -(deltaX / Math.max(1, rect.width)) * scrubView.span;
+    scrubView.start = Math.max(0, Math.min(1 - scrubView.span, scrubView.start + delta));
+    updateScrubChrome();
+    syncUI();
+  }
   function zoomScrub(clientX, deltaY) {
     const rect = scrubEl.getBoundingClientRect();
     const local = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
@@ -2025,15 +2051,45 @@
   hit.style.cssText = "position:absolute;inset:0;z-index:2;cursor:grab;";
   scrubEl.insertBefore(hit, $thumb);
   gsap.registerPlugin(Draggable);
+  const scrubDrag = { mode: "scrub", lastX: 0 };
   Draggable.create(hit, {
     type: "x", bounds: scrubEl, cursor: "grab", activeCursor: "grabbing",
-    onPress(e) { scrubEl.classList.add("is-dragging"); tl.pause(); scrubTo(e.clientX); gsap.set(this.target, { x: 0 }); },
-    onDrag() { scrubTo(this.pointerEvent.clientX); gsap.set(this.target, { x: 0 }); },
-    onRelease() { scrubEl.classList.remove("is-dragging"); gsap.set(this.target, { x: 0 }); },
+    onPress(e) {
+      tl.pause();
+      scrubDrag.lastX = e.clientX;
+      // Shift / middle / alt = pan zoomed timeline; otherwise scrub playhead
+      scrubDrag.mode = (e.shiftKey || e.altKey || e.button === 1 || scrubView.span < 0.999 && e.metaKey)
+        ? "pan"
+        : "scrub";
+      // When zoomed, two-finger style: hold Shift to pan; normal drag still scrubs
+      if (e.shiftKey || e.altKey) scrubDrag.mode = "pan";
+      scrubEl.classList.add(scrubDrag.mode === "pan" ? "is-panning" : "is-dragging");
+      if (scrubDrag.mode === "scrub") scrubTo(e.clientX);
+      gsap.set(this.target, { x: 0 });
+    },
+    onDrag() {
+      const x = this.pointerEvent.clientX;
+      if (scrubDrag.mode === "pan") {
+        panScrub(x - scrubDrag.lastX);
+      } else {
+        scrubTo(x);
+      }
+      scrubDrag.lastX = x;
+      gsap.set(this.target, { x: 0 });
+    },
+    onRelease() {
+      scrubEl.classList.remove("is-dragging", "is-panning");
+      gsap.set(this.target, { x: 0 });
+    },
   });
   scrubEl.addEventListener("wheel", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Horizontal wheel / trackpad swipe pans when zoomed
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && scrubView.span < 0.999) {
+      panScrub(-e.deltaX);
+      return;
+    }
     zoomScrub(e.clientX, e.deltaY);
   }, { passive: false });
   scrubEl.addEventListener("dblclick", () => {
@@ -2043,6 +2099,9 @@
     syncUI();
   });
 
+  document.getElementById("btn-present").addEventListener("click", () => {
+    setView(cam.mode === "present" ? "diagram" : "present");
+  });
   document.getElementById("btn-play").addEventListener("click", () => {
     if (tl.progress() >= 1) { tl.progress(0); tl.play(); return; }
     if (tl.paused()) tl.play(); else tl.pause();
