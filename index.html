@@ -755,13 +755,12 @@
   const _q = { x: 0, y: 0, s: 1, z: 0, a: 1 };
   const _r = { x: 0, y: 0, s: 1, z: 0, a: 1 };
 
-  /* Funnel radius — wide NASA-style trumpet */
+  /* Funnel radius — evenly larger trumpet (no end flare) */
   function funnelRadius(u) {
     u = Math.min(1, Math.max(0, u));
-    const inflation = 52 * (1 - Math.exp(-u / 0.032));
-    const growth = 155 * Math.pow(u, 0.82);
-    const accel = u > 0.68 ? 260 * Math.pow((u - 0.68) / 0.32, 1.55) : 0;
-    return 12 + inflation + growth + accel;
+    const inflation = 42 * (1 - Math.exp(-u / 0.035));
+    const growth = 128 * Math.pow(u, 0.9);
+    return 10 + inflation + growth;
   }
 
   /* Particles fill the funnel volume */
@@ -1661,151 +1660,164 @@
   }
 
   function drawMilkyWay(lit) {
-    const appear = Math.max(state.galaxy, state.stars * 0.35);
-    if (appear < 0.12 || lit < tToDiagramU(YR(1e9)) - 0.02) return;
+    const appear = Math.max(state.galaxy, state.sun * 0.55, state.solar * 0.4);
+    if (appear < 0.1) return;
+    // Appear once galaxies / Sun era is lit — hosts the solar system in depth
+    if (lit < tToDiagramU(YR(8e9)) - 0.03 && state.sun < 0.2) return;
 
-    // Sit in the modern-galaxies stretch, just before the solar-system tip
-    const u = Math.min(0.82, Math.max(tToDiagramU(YR(8.5e9)), 0.62));
-    if (lit < u - 0.04) return;
-    const fade = Math.min(1, (lit - (u - 0.04)) / 0.08) * Math.min(1, appear);
+    const fade = Math.min(1, appear) * Math.min(1, Math.max(state.galaxy, state.sun, lit > 0.7 ? 1 : 0));
     if (fade < 0.05) return;
 
-    const z0 = u * MODEL_LEN;
-    const t = performance.now() * 0.00012;
-    const diskR = funnelRadius(u) * 0.55;
-    const tilt = 0.38; // foreshorten the disk
+    // Same depth as the solar system so zooming in reveals the Sun inside an arm
+    const z0 = SOLAR_Z;
+    const t = performance.now() * 0.0001;
+    // Galactic center offset — Sun/solar system stays at world (0,0,SOLAR_Z) in the Orion Arm
+    const gcX = -118;
+    const gcY = 14;
+    const diskR = 155;
+    const tilt = 0.34;
 
-    // Soft galactic halo / dust fog
-    project(0, 0, z0, _q);
-    const halo = Math.max(60, diskR * _q.s * 1.35);
+    // Soften the whole disk when deep zoomed on planets
+    const close = Math.max(0, Math.min(1, (520 - cam.dist) / 220));
+    const diskFade = fade * (1 - close * 0.35);
+
+    // Halo around galactic center
+    project(gcX, gcY * tilt, z0, _q);
+    const halo = Math.max(70, diskR * _q.s * 0.95);
     const fog = ctx.createRadialGradient(_q.x, _q.y, 0, _q.x, _q.y, halo);
-    fog.addColorStop(0, `rgba(255,230,190,${0.16 * fade})`);
-    fog.addColorStop(0.35, `rgba(120,100,180,${0.12 * fade})`);
-    fog.addColorStop(0.7, `rgba(40,50,100,${0.06 * fade})`);
+    fog.addColorStop(0, `rgba(255,230,190,${0.14 * diskFade})`);
+    fog.addColorStop(0.4, `rgba(100,90,160,${0.1 * diskFade})`);
     fog.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = fog;
     ctx.beginPath();
-    ctx.ellipse(_q.x, _q.y, halo * 1.15, halo * 0.55, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(_q.x, _q.y, halo * 1.2, halo * 0.5, -0.2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Dusty spiral arms (barred spiral feel)
+    // Spiral arms around galactic center (depth via slight z ripple)
     const arms = 2;
     for (let a = 0; a < arms; a++) {
-      const phase = a * Math.PI + t * 0.35;
+      const phase = a * Math.PI + t * 0.3;
       ctx.beginPath();
       let first = true;
-      for (let i = 0; i <= 56; i++) {
-        const f = i / 56;
-        const ang = phase + f * 3.6;
-        const r = diskR * (0.12 + f * 0.88);
-        const wx = Math.cos(ang) * r;
-        const wy = Math.sin(ang) * r * tilt;
-        project(wx, wy, z0 + Math.sin(ang * 2) * 4, _p);
+      for (let i = 0; i <= 64; i++) {
+        const f = i / 64;
+        const ang = phase + f * 3.8;
+        const r = diskR * (0.1 + f * 0.9);
+        const wx = gcX + Math.cos(ang) * r;
+        const wy = gcY + Math.sin(ang) * r;
+        const wz = z0 + Math.sin(ang * 2 + a) * 8 * (1 - f * 0.3);
+        project(wx, wy * tilt, wz, _p);
         if (first) { ctx.moveTo(_p.x, _p.y); first = false; }
         else ctx.lineTo(_p.x, _p.y);
       }
-      ctx.strokeStyle = `rgba(200,210,255,${(0.22 + a * 0.08) * fade})`;
-      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = `rgba(190,205,255,${(0.2 + a * 0.07) * diskFade})`;
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Arm star clumps + pink nebulae
-      for (let i = 4; i <= 52; i += 3) {
-        const f = i / 56;
-        const ang = phase + f * 3.6;
-        const r = diskR * (0.12 + f * 0.88);
-        const wx = Math.cos(ang) * r;
-        const wy = Math.sin(ang) * r * tilt;
-        project(wx, wy, z0, _p);
-        const s = Math.max(0.8, (1.1 + (i % 5) * 0.35) * _p.s);
+      for (let i = 5; i <= 60; i += 3) {
+        const f = i / 64;
+        const ang = phase + f * 3.8;
+        const r = diskR * (0.1 + f * 0.9);
+        const wx = gcX + Math.cos(ang) * r;
+        const wy = gcY + Math.sin(ang) * r;
+        const wz = z0 + Math.sin(ang * 2 + a) * 6;
+        project(wx, wy * tilt, wz, _p);
+        const s = Math.max(0.7, (1.0 + (i % 5) * 0.3) * _p.s);
         if (i % 6 === 0) {
-          // H II / cloud glow
-          const ng = ctx.createRadialGradient(_p.x, _p.y, 0, _p.x, _p.y, s * 5);
-          ng.addColorStop(0, `rgba(255,140,180,${0.35 * fade})`);
-          ng.addColorStop(0.45, `rgba(120,80,200,${0.12 * fade})`);
+          const ng = ctx.createRadialGradient(_p.x, _p.y, 0, _p.x, _p.y, s * 4.5);
+          ng.addColorStop(0, `rgba(255,140,180,${0.32 * diskFade})`);
+          ng.addColorStop(0.5, `rgba(100,70,180,${0.1 * diskFade})`);
           ng.addColorStop(1, "rgba(0,0,0,0)");
           ctx.fillStyle = ng;
           ctx.beginPath();
-          ctx.arc(_p.x, _p.y, s * 5, 0, Math.PI * 2);
+          ctx.arc(_p.x, _p.y, s * 4.5, 0, Math.PI * 2);
           ctx.fill();
         }
-        drawStarDot(_p.x, _p.y, s, 0.55 * fade, i % 7 === 0);
+        drawStarDot(_p.x, _p.y, s, 0.5 * diskFade, i % 7 === 0);
       }
     }
 
-    // Secondary dusty lanes
+    // Dust lanes
     for (let lane = 0; lane < 3; lane++) {
-      const phase = lane * 2.1 + 0.4 + t * 0.2;
+      const phase = lane * 2.05 + 0.5 + t * 0.15;
       ctx.beginPath();
       let first = true;
-      for (let i = 0; i <= 40; i++) {
-        const f = i / 40;
-        const ang = phase + f * 2.8;
-        const r = diskR * (0.2 + f * 0.7);
-        project(Math.cos(ang) * r, Math.sin(ang) * r * tilt * 0.9, z0, _p);
+      for (let i = 0; i <= 44; i++) {
+        const f = i / 44;
+        const ang = phase + f * 3.0;
+        const r = diskR * (0.18 + f * 0.72);
+        project(gcX + Math.cos(ang) * r, (gcY + Math.sin(ang) * r) * tilt, z0, _p);
         if (first) { ctx.moveTo(_p.x, _p.y); first = false; }
         else ctx.lineTo(_p.x, _p.y);
       }
-      ctx.strokeStyle = `rgba(30,20,40,${0.35 * fade})`;
-      ctx.lineWidth = 3.5 - lane * 0.6;
+      ctx.strokeStyle = `rgba(20,15,30,${0.32 * diskFade})`;
+      ctx.lineWidth = 3.2 - lane * 0.5;
       ctx.stroke();
     }
 
-    // Central bulge
-    project(0, 0, z0, _q);
-    const bulge = Math.max(14, diskR * _q.s * 0.28);
+    // Local Orion Arm hint around the Sun (0,0)
+    if (state.sun > 0.2 || state.solar > 0.2) {
+      project(0, 0, z0, _r);
+      const local = ctx.createRadialGradient(_r.x, _r.y, 0, _r.x, _r.y, Math.max(40, 70 * _r.s));
+      local.addColorStop(0, `rgba(180,200,255,${0.1 * fade})`);
+      local.addColorStop(0.5, `rgba(255,160,200,${0.06 * fade})`);
+      local.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = local;
+      ctx.beginPath();
+      ctx.arc(_r.x, _r.y, Math.max(40, 70 * _r.s), 0, Math.PI * 2);
+      ctx.fill();
+      if (cam.dist > 380 && fade > 0.4) {
+        ctx.font = `500 ${Math.max(9, 10 * _r.s)}px "Geist Mono Variable", monospace`;
+        ctx.fillStyle = `rgba(200,210,255,${0.55 * fade})`;
+        ctx.textAlign = "center";
+        ctx.fillText("Orion Arm · Solar System", _r.x, _r.y + 28 * Math.max(0.7, _r.s));
+      }
+    }
+
+    // Central bulge + Sagittarius A*
+    project(gcX, gcY * tilt, z0 - 6, _q);
+    const bulge = Math.max(12, diskR * _q.s * 0.22);
     const bg = ctx.createRadialGradient(_q.x, _q.y, 0, _q.x, _q.y, bulge);
-    bg.addColorStop(0, `rgba(255,245,220,${0.85 * fade})`);
-    bg.addColorStop(0.35, `rgba(255,190,120,${0.45 * fade})`);
-    bg.addColorStop(0.7, `rgba(120,70,40,${0.18 * fade})`);
+    bg.addColorStop(0, `rgba(255,245,220,${0.8 * diskFade})`);
+    bg.addColorStop(0.4, `rgba(255,180,110,${0.4 * diskFade})`);
     bg.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = bg;
     ctx.beginPath();
-    ctx.ellipse(_q.x, _q.y, bulge * 1.1, bulge * 0.7, 0, 0, Math.PI * 2);
+    ctx.ellipse(_q.x, _q.y, bulge * 1.15, bulge * 0.68, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Sagittarius A* — central black hole + accretion glow
-    const bhR = Math.max(3.5, bulge * 0.18);
-    const accr = ctx.createRadialGradient(_q.x, _q.y, bhR * 0.6, _q.x, _q.y, bhR * 3.2);
-    accr.addColorStop(0, `rgba(255,200,120,${0.55 * fade})`);
-    accr.addColorStop(0.35, `rgba(255,120,60,${0.28 * fade})`);
-    accr.addColorStop(0.7, `rgba(120,60,255,${0.12 * fade})`);
+    const bhR = Math.max(3, bulge * 0.2);
+    const accr = ctx.createRadialGradient(_q.x, _q.y, bhR * 0.5, _q.x, _q.y, bhR * 3);
+    accr.addColorStop(0, `rgba(255,200,120,${0.5 * diskFade})`);
+    accr.addColorStop(0.4, `rgba(255,100,50,${0.22 * diskFade})`);
     accr.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = accr;
     ctx.beginPath();
-    ctx.arc(_q.x, _q.y, bhR * 3.2, 0, Math.PI * 2);
+    ctx.arc(_q.x, _q.y, bhR * 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Accretion disk ring
     ctx.beginPath();
-    ctx.ellipse(_q.x, _q.y, bhR * 2.4, bhR * 0.85, -0.4, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255,180,100,${0.55 * fade})`;
-    ctx.lineWidth = 1.5;
+    ctx.ellipse(_q.x, _q.y, bhR * 2.3, bhR * 0.8, -0.45, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,180,100,${0.5 * diskFade})`;
+    ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    // Event horizon
     ctx.beginPath();
     ctx.arc(_q.x, _q.y, bhR, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(0,0,0,${0.95 * fade})`;
+    ctx.fillStyle = `rgba(0,0,0,${0.95 * diskFade})`;
     ctx.fill();
-    ctx.strokeStyle = `rgba(255,220,160,${0.35 * fade})`;
+    ctx.strokeStyle = `rgba(255,210,150,${0.35 * diskFade})`;
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Photon-ring hint
-    ctx.beginPath();
-    ctx.arc(_q.x, _q.y, bhR * 1.35, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255,160,80,${0.4 * fade})`;
-    ctx.lineWidth = 1.25;
-    ctx.stroke();
-
-    if (fade > 0.35) {
-      ctx.font = `560 ${Math.max(11, 13 * Math.min(1.2, _q.s))}px "Geist Variable", sans-serif`;
-      ctx.fillStyle = `rgba(255,255,255,${0.8 * fade})`;
+    if (diskFade > 0.3 && cam.dist > 300) {
+      ctx.font = `560 ${Math.max(11, 12 * Math.min(1.15, _q.s))}px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.78 * diskFade})`;
       ctx.textAlign = "center";
-      ctx.fillText("Milky Way", _q.x, _q.y - bulge - 16);
+      ctx.fillText("Milky Way", _q.x, _q.y - bulge - 14);
       ctx.font = `400 9px "Geist Mono Variable", monospace`;
-      ctx.fillStyle = `rgba(200,180,255,${0.55 * fade})`;
-      ctx.fillText("Sagittarius A* · central black hole", _q.x, _q.y - bulge - 3);
+      ctx.fillStyle = `rgba(200,180,255,${0.55 * diskFade})`;
+      ctx.fillText("Sagittarius A*", _q.x, _q.y - bulge - 2);
     }
   }
 
