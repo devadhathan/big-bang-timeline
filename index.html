@@ -258,10 +258,10 @@
       <div class="meta"><span class="dot"></span><span id="temp-readout">T ≈ 10³² K</span></div>
       <div class="stages" id="earth-stages" aria-label="Earth eons">
         <button type="button" data-stage="0">Hadean</button>
-        <button type="button" data-stage="1">Archean</button>
-        <button type="button" data-stage="2">Proterozoic</button>
-        <button type="button" data-stage="3">Phanerozoic</button>
-        <button type="button" data-stage="4">Now</button>
+        <button type="button" data-stage="1">Life</button>
+        <button type="button" data-stage="2">Oxygen</button>
+        <button type="button" data-stage="3">Dinosaurs</button>
+        <button type="button" data-stage="4">2026</button>
       </div>
     </div>
     <div class="hint-orbit" id="hint-orbit">Drag canvas to orbit · Side reveals model</div>
@@ -297,7 +297,7 @@
     </div>
     <div class="ends">
       <span id="scrub-end-left">10⁻⁴³ s · Planck</span>
-      <span id="scrub-end-right">13.8 Gyr · you are here</span>
+      <span id="scrub-end-right">2026 · you are here</span>
     </div>
   </footer>
 </div>
@@ -500,41 +500,55 @@
       temp: 500, radius: 0.9, spread: 0.1, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 0, stars: 0.25, galaxy: 0.2,
     },
     {
-      id: "archean", label: "Archean", major: true,
-      t: YR(9.8e9), tEnd: YR(11.3e9),
-      title: "Archean Earth", kicker: "Chapter 14 · First life · 4.0–2.5 Ga",
-      copy: "Crust cools. Oceans dominate. Tiny landmasses rise. Microbial life begins; oxygen slowly appears.",
-      temp: 340, radius: 0.93, spread: 0.1, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 1, life: 0.35, stars: 0.28, galaxy: 0.22,
+      id: "archean", label: "Life", major: true,
+      t: YR(9.8e9), tEnd: YR(10.2e9),
+      title: "Life begins", kicker: "Chapter 14 · First life · ≈ 3.8 Ga ago",
+      copy: "In Archean oceans, chemistry crosses into biology. Microbial life takes hold — the first living chapter on Earth.",
+      temp: 340, radius: 0.93, spread: 0.1, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 1, life: 0.45, stars: 0.28, galaxy: 0.22,
     },
     {
-      id: "proterozoic", label: "Proterozoic", major: true,
+      id: "proterozoic", label: "Oxygen", major: true,
       t: YR(11.3e9), tEnd: YR(13.26e9),
       title: "Proterozoic Earth", kicker: "Chapter 15 · Oxygen · 2.5–0.54 Ga",
       copy: "Great Oxidation. Continents grow. Snowball Earth freezes. Complex cells — and soft animals — arrive late.",
       temp: 290, radius: 0.96, spread: 0.1, energy: 0.44, sun: 1, solar: 1, planets: 1, earth: 1, stage: 2, life: 0.6, stars: 0.3, galaxy: 0.22,
     },
     {
-      id: "phanerozoic", label: "Phanerozoic", major: true,
-      t: YR(13.26e9), tEnd: YR(13.75e9),
-      title: "Phanerozoic Earth", kicker: "Chapter 16 · Visible life · 541 Ma–now",
-      copy: "Cambrian explosion, forests, dinosaurs, mammals. Continents drift into familiar shapes.",
+      id: "phanerozoic", label: "Animals", major: true,
+      t: YR(13.26e9), tEnd: YR(13.55e9),
+      title: "Phanerozoic Earth", kicker: "Chapter 16 · Visible life · 541 Ma",
+      copy: "Cambrian explosion. Forests rise. Continents drift. Complex animals fill the seas and land.",
       temp: 288, radius: 0.98, spread: 0.1, energy: 0.45, sun: 1, solar: 1, planets: 1, earth: 1, stage: 3, life: 1, stars: 0.32, galaxy: 0.24,
     },
     {
-      id: "now", label: "Now", major: true,
+      id: "dinosaurs", label: "Dinosaurs", major: true,
+      t: YR(13.57e9), tEnd: YR(13.72e9),
+      title: "Age of dinosaurs", kicker: "Chapter 17 · ≈ 230–66 Ma ago",
+      copy: "Dinosaurs dominate the land for over 160 million years. Birds evolve. Flowering plants spread.",
+      temp: 288, radius: 0.985, spread: 0.1, energy: 0.45, sun: 1, solar: 1, planets: 1, earth: 1, stage: 3, life: 1, stars: 0.33, galaxy: 0.24,
+    },
+    {
+      id: "impact", label: "Impact", major: true,
+      t: YR(13.734e9), tEnd: YR(13.75e9),
+      title: "Chicxulub impact", kicker: "Chapter 18 · 66 Ma ago",
+      copy: "A ~10 km asteroid strikes the Yucatán. Non-avian dinosaurs end. Mammals inherit the emptied world.",
+      temp: 288, radius: 0.99, spread: 0.1, energy: 0.5, sun: 1, solar: 1, planets: 1, earth: 1, stage: 3, life: 1, stars: 0.34, galaxy: 0.25, flash: true,
+    },
+    {
+      id: "now", label: "2026", major: true,
       t: YR(13.8e9), tEnd: YR(13.8e9),
-      title: "You are here", kicker: "Chapter 17 · Present day",
-      copy: "13.8 billion years later: a yellow star, eight planets, and a living blue Earth. This is home.",
+      title: "You are here · 2026", kicker: "Chapter 19 · Present day",
+      copy: "13.8 billion years after the Big Bang — a yellow star, eight planets, and a living blue Earth. This is home, in 2026.",
       temp: 2.725, radius: 1, spread: 0.12, energy: 0.42, sun: 1, solar: 1, planets: 1, earth: 1, stage: 4, life: 1, stars: 0.35, galaxy: 0.25,
     },
   ];
 
   const EARTH_STAGES = [
     { id: "hadean", name: "Hadean", range: "4.5–4.0 Ga", epochId: "hadean" },
-    { id: "archean", name: "Archean", range: "4.0–2.5 Ga", epochId: "archean" },
-    { id: "proterozoic", name: "Proterozoic", range: "2.5–0.54 Ga", epochId: "proterozoic" },
-    { id: "phanerozoic", name: "Phanerozoic", range: "541 Ma–", epochId: "phanerozoic" },
-    { id: "now", name: "Now", range: "Today", epochId: "now" },
+    { id: "archean", name: "Life", range: "≈ 3.8 Ga", epochId: "archean" },
+    { id: "proterozoic", name: "Oxygen", range: "2.5–0.54 Ga", epochId: "proterozoic" },
+    { id: "dinosaurs", name: "Dinosaurs", range: "230–66 Ma", epochId: "dinosaurs" },
+    { id: "now", name: "2026", range: "Today", epochId: "now" },
   ];
 
   const PLANETS = [
@@ -1236,6 +1250,10 @@
       { t: YR(4e8), label: "1st Stars", sub: "≈ 400 Myr", y: -1 },
       { t: YR(1e9), label: "Galaxies form", y: 1 },
       { t: YR(9.2e9), label: "Dark energy", sub: "accelerated expansion", y: -1 },
+      { t: YR(10.0e9), label: "Life begins", sub: "≈ 3.8 Ga ago", y: 1 },
+      { t: YR(13.57e9), label: "Dinosaurs", sub: "≈ 230 Ma", y: -1 },
+      { t: YR(13.734e9), label: "Chicxulub impact", sub: "66 Ma", y: 1 },
+      { t: YR(13.8e9), label: "2026", sub: "you are here", y: -1 },
     ];
     callouts.forEach((c) => {
       const u = c.u != null ? c.u : tToDiagramU(c.t);
@@ -1254,6 +1272,84 @@
         ctx.fillStyle = `rgba(170,190,220,${0.5 * appear})`;
         ctx.fillText(c.sub, _p.x, _p.y + 13);
       }
+    });
+  }
+
+  /** Popular galaxies & stars — shown when zoomed into the stars / galaxy stretch */
+  const COSMOS_LANDMARKS = [
+    { t: YR(4e8), name: "Population III", sub: "first stars", kind: "star", y: -1 },
+    { t: YR(1.0e9), name: "Protogalaxies", sub: "early clumps", kind: "galaxy", y: 1 },
+    { t: YR(3.5e9), name: "Andromeda", sub: "M31 forms", kind: "galaxy", y: -1 },
+    { t: YR(5.5e9), name: "Whirlpool", sub: "M51", kind: "galaxy", y: 1 },
+    { t: YR(7.5e9), name: "Triangulum", sub: "M33", kind: "galaxy", y: -1 },
+    { t: YR(8.5e9), name: "Milky Way disk", sub: "thin disk", kind: "galaxy", y: 1 },
+    { t: YR(9.0e9), name: "Orion Nebula", sub: "star nursery", kind: "star", y: -1 },
+    { t: YR(9.15e9), name: "Alpha Centauri", sub: "nearest system", kind: "star", y: 1 },
+    { t: YR(9.2e9), name: "The Sun", sub: "G2V · home", kind: "star", y: -1 },
+  ];
+
+  function drawFamousCosmos(lit) {
+    // Only when looking into the stellar / galactic region
+    if (cam.dist > 720) return;
+    if (state.stars < 0.15 && state.galaxy < 0.15) return;
+    const zoomIn = Math.max(0, Math.min(1, (720 - cam.dist) / 320));
+    if (zoomIn < 0.12) return;
+
+    COSMOS_LANDMARKS.forEach((m, i) => {
+      const u = tToDiagramU(m.t);
+      if (lit < u - 0.02) return;
+      if (u < STARS_DIAGRAM_U - 0.02) return;
+      const z = u * MODEL_LEN;
+      const rad = funnelRadius(u);
+      const appear = Math.min(1, (lit - (u - 0.02)) / 0.05) * zoomIn;
+      if (appear < 0.08) return;
+
+      const ang = (i * 0.9 + m.y * 0.4) % (Math.PI * 2);
+      const rr = rad * (0.35 + (i % 3) * 0.12);
+      project(Math.cos(ang) * rr, Math.sin(ang) * rr * 0.55, z, _p);
+
+      if (m.kind === "galaxy") {
+        drawGalaxySprite(_p.x, _p.y, Math.max(2.2, 3.2 * _p.s * (0.7 + zoomIn)), appear * 0.9, i * 0.17);
+      } else {
+        drawStarDot(_p.x, _p.y, Math.max(1.2, 2.4 * _p.s), appear, true);
+      }
+
+      const labelY = _p.y + (m.y > 0 ? 16 : -14) * Math.max(0.8, _p.s);
+      ctx.font = `560 ${Math.max(9, 11 * Math.min(1.2, _p.s))}px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.8 * appear})`;
+      ctx.textAlign = "center";
+      ctx.fillText(m.name, _p.x, labelY);
+      ctx.font = `400 ${Math.max(8, 9 * Math.min(1.1, _p.s))}px "Geist Mono Variable", monospace`;
+      ctx.fillStyle = `rgba(170,190,220,${0.55 * appear})`;
+      ctx.fillText(m.sub, _p.x, labelY + 12);
+    });
+  }
+
+  function drawEarthMilestones(lit) {
+    if (cam.dist > 700 || state.earth < 0.3) return;
+    const zoomIn = Math.max(0, Math.min(1, (700 - cam.dist) / 300));
+    if (zoomIn < 0.15) return;
+
+    const marks = [
+      { t: YR(10.0e9), name: "Life begins", sub: "≈ 3.8 Ga", y: 1 },
+      { t: YR(13.57e9), name: "Dinosaurs", sub: "≈ 230 Ma", y: -1 },
+      { t: YR(13.734e9), name: "Asteroid impact", sub: "Chicxulub · 66 Ma", y: 1 },
+      { t: YR(13.8e9), name: "2026", sub: "you are here", y: -1 },
+    ];
+    marks.forEach((m) => {
+      const u = tToDiagramU(m.t);
+      if (lit < u - 0.015) return;
+      const z = Math.min(MODEL_LEN * 0.99, u * MODEL_LEN);
+      const rad = funnelRadius(Math.min(1, u));
+      const appear = Math.min(1, (lit - (u - 0.015)) / 0.04) * zoomIn;
+      project(0, m.y * (rad + 28), z, _p);
+      ctx.font = `560 ${Math.max(10, 12 * Math.min(1.15, _p.s))}px "Geist Variable", sans-serif`;
+      ctx.fillStyle = `rgba(255,255,255,${0.82 * appear})`;
+      ctx.textAlign = "center";
+      ctx.fillText(m.name, _p.x, _p.y);
+      ctx.font = `400 9px "Geist Mono Variable", monospace`;
+      ctx.fillStyle = `rgba(180,200,230,${0.55 * appear})`;
+      ctx.fillText(m.sub, _p.x, _p.y + 13);
     });
   }
 
@@ -1280,7 +1376,7 @@
     ctx.fillText("Big Bang Expansion", (x0 + x1) / 2, y - 10);
     ctx.font = "400 11px \"Geist Mono Variable\", monospace";
     ctx.fillStyle = "rgba(160,170,190,0.55)";
-    ctx.fillText("13.8 billion years", (x0 + x1) / 2, y + 18);
+    ctx.fillText("13.8 billion years · to 2026", (x0 + x1) / 2, y + 18);
   }
 
   function drawSun(x, y, z, alpha, scale) {
@@ -1784,7 +1880,11 @@
     const nearPresent = cam.dist < 420;
     // Keep model labels visible when zoomed in
     if (reveal > 0.45) drawEpochCallouts(lit);
-    if (reveal > 0.25) drawSolarSystem();
+    if (reveal > 0.25) {
+      drawFamousCosmos(lit);
+      drawSolarSystem();
+      drawEarthMilestones(lit);
+    }
     if (reveal > 0.45 && !nearPresent) drawBottomScale(lit);
 
     if (lit > 0.92 && reveal > 0.5) {
@@ -1792,7 +1892,7 @@
       ctx.font = `560 13px "Geist Variable", sans-serif`;
       ctx.fillStyle = `rgba(255,255,255,${0.75 * state.earth})`;
       ctx.textAlign = "center";
-      ctx.fillText("Present", _p.x, _p.y);
+      ctx.fillText("2026 · Present", _p.x, _p.y);
     }
 
     if (state.flash > 0.01) {
@@ -1858,6 +1958,10 @@
       tl.fromTo(state, { flash: 1, shock: 0 }, {
         flash: 0, shock: 1, duration: 1.55, ease: "power2.out",
       }, start);
+    } else if (ep.flash) {
+      tl.fromTo(state, { flash: 0.85 }, {
+        flash: 0, duration: 1.0, ease: "power2.out",
+      }, start);
     }
   });
   tl.to({}, { duration: 0.01 }, DURATION);
@@ -1875,7 +1979,10 @@
   const $iconPlay = document.getElementById("icon-play");
   const $iconPause = document.getElementById("icon-pause");
 
-  const LABEL_IDS = new Set(["planck", "particles", "atoms", "stars", "milkyway", "sun", "solarsystem", "hadean", "now"]);
+  const LABEL_IDS = new Set([
+    "planck", "particles", "atoms", "stars", "milkyway", "sun", "solarsystem",
+    "hadean", "archean", "dinosaurs", "impact", "now",
+  ]);
   const scrubView = { start: 0, span: 1 };
   const $scrubZoom = document.getElementById("scrub-zoom");
   const $endLeft = document.getElementById("scrub-end-left");
